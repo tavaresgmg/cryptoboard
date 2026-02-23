@@ -13,6 +13,35 @@ import { registerSecurity } from "./plugins/security.js";
 import { registerSwagger } from "./plugins/swagger.js";
 import { registerUpload } from "./plugins/upload.js";
 
+interface HttpErrorLike {
+  statusCode?: unknown;
+  name?: unknown;
+  message?: unknown;
+}
+
+function getClientHttpError(error: unknown): { statusCode: number; name: string; message: string } | null {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const parsedError = error as HttpErrorLike;
+  const statusCode = parsedError.statusCode;
+  if (
+    typeof statusCode !== "number" ||
+    !Number.isInteger(statusCode) ||
+    statusCode < 400 ||
+    statusCode >= 500
+  ) {
+    return null;
+  }
+
+  return {
+    statusCode,
+    name: typeof parsedError.name === "string" ? parsedError.name : "Client Error",
+    message: typeof parsedError.message === "string" ? parsedError.message : "Requisicao invalida"
+  };
+}
+
 export async function buildServer(env: AppEnv) {
   const app = Fastify({
     logger: env.NODE_ENV !== "test"
@@ -43,6 +72,15 @@ export async function buildServer(env: AppEnv) {
         error: "App Error",
         message: error.message,
         details: error.details
+      });
+    }
+
+    const clientHttpError = getClientHttpError(error);
+    if (clientHttpError) {
+      return reply.status(clientHttpError.statusCode).send({
+        statusCode: clientHttpError.statusCode,
+        error: clientHttpError.name,
+        message: clientHttpError.message
       });
     }
 

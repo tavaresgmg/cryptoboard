@@ -66,7 +66,9 @@ async function requestWithAuth(
   retryOnUnauthorized = true
 ): Promise<Response> {
   const isFormDataBody = init.body instanceof FormData;
-  const shouldSetJsonContentType = !isFormDataBody && !hasContentTypeHeader(init.headers);
+  const hasRequestBody = init.body !== undefined && init.body !== null;
+  const shouldSetJsonContentType =
+    hasRequestBody && !isFormDataBody && !hasContentTypeHeader(init.headers);
 
   const response = await fetch(`${API_URL}${path}`, {
     ...init,

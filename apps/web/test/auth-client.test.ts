@@ -211,6 +211,57 @@ describe("auth-client", () => {
     expect(cryptoCalls).toBe(2);
   });
 
+  test("addFavorite/removeFavorite nao devem enviar content-type sem body", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = resolveUrl(input);
+
+      if (url === `${API_URL}/auth/login`) {
+        return jsonResponse({
+          accessToken: "access-token-login",
+          user: {
+            id: "user-1",
+            name: "User One",
+            email: "user@example.com"
+          }
+        });
+      }
+
+      if (url === `${API_URL}/users/me` && init?.method !== "POST" && init?.method !== "DELETE") {
+        return jsonResponse(profilePayload());
+      }
+
+      if (url === `${API_URL}/users/me/favorites/btc-bitcoin` && init?.method === "POST") {
+        expect(readHeader(init.headers, "Authorization")).toBe("Bearer access-token-login");
+        expect(readHeader(init.headers, "Content-Type")).toBeNull();
+        expect(init.body).toBeUndefined();
+        return jsonResponse({ favorites: ["btc-bitcoin"] }, 201);
+      }
+
+      if (url === `${API_URL}/users/me/favorites/btc-bitcoin` && init?.method === "DELETE") {
+        expect(readHeader(init.headers, "Authorization")).toBe("Bearer access-token-login");
+        expect(readHeader(init.headers, "Content-Type")).toBeNull();
+        expect(init.body).toBeUndefined();
+        return jsonResponse({ favorites: [] });
+      }
+
+      throw new Error(`URL inesperada: ${url}`);
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const client = await loadClient();
+
+    await client.login({
+      email: "user@example.com",
+      password: "12345678"
+    });
+
+    const addResult = await client.addFavorite("btc-bitcoin");
+    const removeResult = await client.removeFavorite("btc-bitcoin");
+
+    expect(addResult.favorites).toEqual(["btc-bitcoin"]);
+    expect(removeResult.favorites).toEqual([]);
+  });
+
   test("logout deve limpar estado local mesmo com erro da API", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = resolveUrl(input);

@@ -394,6 +394,35 @@ describe("Auth + Crypto + Favorites integration", () => {
     assert.equal(addFavoriteResponse.statusCode, 404);
   });
 
+  test("deve retornar 400 para body JSON vazio no endpoint de favoritos", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Empty JSON Body",
+        email: `user-${randomUUID()}@example.com`,
+        password: "12345678"
+      }
+    });
+
+    assert.equal(registerResponse.statusCode, 201);
+    const authPayload = parseJson<RegisterResponse>(registerResponse.body);
+
+    const addFavoriteResponse = await app.inject({
+      method: "POST",
+      url: "/users/me/favorites/btc-bitcoin",
+      headers: {
+        ...authHeaders(authPayload.accessToken),
+        "content-type": "application/json"
+      }
+    });
+
+    assert.equal(addFavoriteResponse.statusCode, 400);
+    const errorPayload = parseJson<{ statusCode: number; message: string }>(addFavoriteResponse.body);
+    assert.equal(errorPayload.statusCode, 400);
+    assert.ok(errorPayload.message.length > 0);
+  });
+
   test("deve renovar sessao com refresh token e invalidar ao fazer logout", async () => {
     const registerResponse = await app.inject({
       method: "POST",
