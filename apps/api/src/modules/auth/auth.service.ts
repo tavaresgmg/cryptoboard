@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import type {
   AccessTokenResponse,
   AuthSuccessResponse,
@@ -19,37 +17,29 @@ interface AuthResult {
   refreshToken: string;
 }
 
-function buildAuthSuccessResponse(accessToken: string, userId: string): AuthSuccessResponse {
-  const user = userRepository.findById(userId);
-  if (!user) {
-    throw new AppError("Usuario nao encontrado", 404);
-  }
-
-  return {
-    accessToken,
-    user: toAuthUser(user)
-  };
-}
-
 async function createSessionForUser(
   app: FastifyInstance,
   env: AppEnv,
   userId: string
 ): Promise<AuthResult> {
-  const user = userRepository.findById(userId);
+  const user = await userRepository.findById(userId);
   if (!user) {
     throw new AppError("Usuario nao encontrado", 404);
   }
 
   const { accessToken, refreshToken } = await issueSessionTokens(app, env, {
-    userId: user.id,
+    userId: user._id.toString(),
     email: user.email
   });
 
-  userRepository.updateRefreshTokenHash(user.id, hashToken(refreshToken));
+  await userRepository.updateRefreshTokenHash(user._id.toString(), hashToken(refreshToken));
 
+  const authUser = toAuthUser(user);
   return {
-    response: buildAuthSuccessResponse(accessToken, user.id),
+    response: {
+      accessToken,
+      user: authUser
+    },
     refreshToken
   };
 }
@@ -61,19 +51,29 @@ export async function registerUser(
 ): Promise<AuthResult> {
   const parsed = registerInputSchema.parse(input);
 
-  if (userRepository.findByEmail(parsed.email)) {
+  const existingUser = await userRepository.findByEmail(parsed.email);
+  if (existingUser) {
     throw new AppError("Email ja cadastrado", 409);
   }
 
   const passwordHash = await hashPassword(parsed.password);
-  const user = userRepository.create({
-    id: randomUUID(),
-    name: parsed.name,
-    email: parsed.email,
-    passwordHash
-  });
+  let user;
+  try {
+    user = await userRepository.create({
+      name: parsed.name,
+      email: parsed.email,
+      passwordHash
+    });
+  } catch (error) {
+    const duplicateKey = typeof error === "object" && error !== null && "code" in error;
+    if (duplicateKey && (error as { code?: number }).code === 11000) {
+      throw new AppError("Email ja cadastrado", 409);
+    }
 
-  return createSessionForUser(app, env, user.id);
+    throw error;
+  }
+
+  return createSessionForUser(app, env, user._id.toString());
 }
 
 export async function loginUser(
@@ -82,7 +82,7 @@ export async function loginUser(
   input: unknown
 ): Promise<AuthResult> {
   const parsed: LoginInput = loginInputSchema.parse(input);
-  const user = userRepository.findByEmail(parsed.email);
+  const user = await userRepository.findByEmail(parsed.email);
   if (!user) {
     throw new AppError("Credenciais invalidas", 401);
   }
@@ -92,7 +92,7 @@ export async function loginUser(
     throw new AppError("Credenciais invalidas", 401);
   }
 
-  return createSessionForUser(app, env, user.id);
+  return createSessionForUser(app, env, user._id.toString());
 }
 
 export async function refreshSession(
@@ -111,7 +111,7 @@ export async function refreshSession(
     throw new AppError("Refresh token invalido", 401);
   }
 
-  const user = userRepository.findById(payload.sub);
+  const user = await userRepository.findById(payload.sub);
   if (!user?.refreshTokenHash) {
     throw new AppError("Sessao invalida", 401);
   }
@@ -120,7 +120,7 @@ export async function refreshSession(
     throw new AppError("Sessao invalida", 401);
   }
 
-  const session = await createSessionForUser(app, env, user.id);
+  const session = await createSessionForUser(app, env, user._id.toString());
   return {
     response: {
       accessToken: session.response.accessToken
@@ -129,6 +129,6 @@ export async function refreshSession(
   };
 }
 
-export function logoutUser(userId: string): void {
-  userRepository.clearRefreshTokenHash(userId);
+export async function logoutUser(userId: string): Promise<void> {
+  await userRepository.clearRefreshTokenHash(userId);
 }

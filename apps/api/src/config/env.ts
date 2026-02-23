@@ -5,6 +5,7 @@ const envSchema = z.object({
   HOST: z.string().default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_ORIGIN: z.string().default("http://localhost:5173"),
+  MONGODB_URI: z.string().default("mongodb://localhost:27017/erictel"),
   JWT_SECRET: z
     .string()
     .min(16, "JWT_SECRET deve ter ao menos 16 caracteres")

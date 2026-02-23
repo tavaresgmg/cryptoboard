@@ -25,6 +25,7 @@ Projeto em formato monorepo com `pnpm workspaces` para separar responsabilidades
 - TypeScript estrito como baseline de corretude.
 - ESLint + Prettier para consistencia.
 - API com Fastify + Swagger em `/docs`, health em `/health` e fluxo de auth JWT.
+- Persistencia de usuarios em MongoDB via Mongoose.
 - Frontend com Vue 3 + Vite + Vue Router, incluindo rotas publicas e protegidas.
 - Contratos centralizados em `packages/shared/src/schemas` com Zod.
 - Execucao local containerizada via Dockerfiles e `docker-compose.yml`.
@@ -37,6 +38,7 @@ Projeto em formato monorepo com `pnpm workspaces` para separar responsabilidades
   - `src/modules/health/health.routes.ts`: rota de health
   - `src/modules/auth/*`: register/login/refresh/logout + guard JWT
   - `src/modules/user/*`: `/users/me` protegido
+  - `src/modules/user/user.model.ts`: schema Mongoose do usuario
 - `apps/web`:
   - `index.html`, `vite.config.ts`
   - `src/router/index.ts`: guard de rotas com refresh automatico

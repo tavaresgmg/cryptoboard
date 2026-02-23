@@ -8,6 +8,7 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       WEB_ORIGIN: http://localhost:8080
+      MONGODB_URI: mongodb://mongo:27017/erictel
       JWT_SECRET: dev-secret-change-me-please
       JWT_ACCESS_EXPIRATION: 15m
       JWT_REFRESH_EXPIRATION: 7d

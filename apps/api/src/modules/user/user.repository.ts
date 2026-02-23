@@ -1,20 +1,8 @@
-import type { AuthUser, SupportedCurrency, UserProfile } from "@crypto/shared";
+import type { AuthUser, UserProfile } from "@crypto/shared";
 
-export interface StoredUser {
-  id: string;
-  name: string;
-  email: string;
-  passwordHash: string;
-  description?: string;
-  preferredCurrency: SupportedCurrency;
-  favorites: string[];
-  createdAt: Date;
-  updatedAt: Date;
-  refreshTokenHash?: string;
-}
+import { UserModel, type UserDocument } from "./user.model.js";
 
 interface CreateUserInput {
-  id: string;
   name: string;
   email: string;
   passwordHash: string;
@@ -25,67 +13,53 @@ function normalizeEmail(email: string): string {
 }
 
 class UserRepository {
-  private readonly usersById = new Map<string, StoredUser>();
-  private readonly userIdByEmail = new Map<string, string>();
-
-  findByEmail(email: string): StoredUser | undefined {
-    const userId = this.userIdByEmail.get(normalizeEmail(email));
-    if (!userId) {
-      return undefined;
-    }
-
-    return this.usersById.get(userId);
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    const normalizedEmail = normalizeEmail(email);
+    return UserModel.findOne({ email: normalizedEmail }).exec();
   }
 
-  findById(id: string): StoredUser | undefined {
-    return this.usersById.get(id);
+  async findById(id: string): Promise<UserDocument | null> {
+    return UserModel.findById(id).exec();
   }
 
-  create(input: CreateUserInput): StoredUser {
-    const now = new Date();
-    const normalizedEmail = normalizeEmail(input.email);
-
-    const user: StoredUser = {
-      id: input.id,
+  async create(input: CreateUserInput): Promise<UserDocument> {
+    const user = await UserModel.create({
       name: input.name.trim(),
-      email: normalizedEmail,
-      passwordHash: input.passwordHash,
-      preferredCurrency: "USD",
-      favorites: [],
-      createdAt: now,
-      updatedAt: now
-    };
-
-    this.usersById.set(user.id, user);
-    this.userIdByEmail.set(user.email, user.id);
+      email: normalizeEmail(input.email),
+      passwordHash: input.passwordHash
+    });
 
     return user;
   }
 
-  updateRefreshTokenHash(userId: string, refreshTokenHash: string): void {
-    const user = this.findById(userId);
-    if (!user) {
-      return;
-    }
-
-    user.refreshTokenHash = refreshTokenHash;
-    user.updatedAt = new Date();
+  async updateRefreshTokenHash(userId: string, refreshTokenHash: string): Promise<void> {
+    await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          refreshTokenHash
+        }
+      },
+      { new: false }
+    ).exec();
   }
 
-  clearRefreshTokenHash(userId: string): void {
-    const user = this.findById(userId);
-    if (!user) {
-      return;
-    }
-
-    user.refreshTokenHash = undefined;
-    user.updatedAt = new Date();
+  async clearRefreshTokenHash(userId: string): Promise<void> {
+    await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $unset: {
+          refreshTokenHash: 1
+        }
+      },
+      { new: false }
+    ).exec();
   }
 }
 
 export const userRepository = new UserRepository();
 
-export function toAuthUser(user: StoredUser): AuthUser {
+export function toAuthUser(user: UserDocument): AuthUser {
   return {
     id: user.id,
     name: user.name,
@@ -93,12 +67,12 @@ export function toAuthUser(user: StoredUser): AuthUser {
   };
 }
 
-export function toUserProfile(user: StoredUser): UserProfile {
+export function toUserProfile(user: UserDocument): UserProfile {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
-    description: user.description,
+    description: user.description ?? undefined,
     preferredCurrency: user.preferredCurrency,
     favorites: user.favorites,
     createdAt: user.createdAt.toISOString(),

@@ -92,7 +92,7 @@ const authRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
     },
     async (request, reply) => {
       const authUser = getAuthUser(request);
-      logoutUser(authUser.sub);
+      await logoutUser(authUser.sub);
       clearRefreshTokenCookie(reply, env);
       return reply.send({ message: "Logout realizado com sucesso" });
     }

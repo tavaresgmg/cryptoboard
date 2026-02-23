@@ -18,7 +18,7 @@ const userRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const authUser = getAuthUser(request);
-      const user = userRepository.findById(authUser.sub);
+      const user = await userRepository.findById(authUser.sub);
       if (!user) {
         throw new AppError("Usuario nao encontrado", 404);
       }
