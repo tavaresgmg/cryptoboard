@@ -55,6 +55,30 @@ class UserRepository {
       { new: false }
     ).exec();
   }
+
+  async addFavorite(userId: string, coinId: string): Promise<UserDocument | null> {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $addToSet: {
+          favorites: coinId
+        }
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async removeFavorite(userId: string, coinId: string): Promise<UserDocument | null> {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $pull: {
+          favorites: coinId
+        }
+      },
+      { new: true }
+    ).exec();
+  }
 }
 
 export const userRepository = new UserRepository();

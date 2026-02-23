@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import type { AppEnv } from "./config/env.js";
 import { AppError } from "./lib/app-error.js";
 import authRoutes from "./modules/auth/auth.routes.js";
+import cryptoRoutes from "./modules/crypto/crypto.routes.js";
 import healthRoutes from "./modules/health/health.routes.js";
 import userRoutes from "./modules/user/user.routes.js";
 import { registerAuth } from "./plugins/auth.js";
@@ -51,7 +52,8 @@ export async function buildServer(env: AppEnv) {
 
   await app.register(healthRoutes);
   await app.register(authRoutes, { env });
-  await app.register(userRoutes);
+  await app.register(userRoutes, { env });
+  await app.register(cryptoRoutes, { env });
 
   return app;
 }

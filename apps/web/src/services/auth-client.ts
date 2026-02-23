@@ -1,13 +1,23 @@
 import {
   accessTokenResponseSchema,
   authSuccessResponseSchema,
+  cryptoDetailSchema,
+  cryptoListResponseSchema,
+  favoriteListResponseSchema,
+  favoritesResponseSchema,
+  listCryptoQuerySchema,
   loginInputSchema,
   logoutResponseSchema,
   registerInputSchema,
   userProfileSchema
 } from "@crypto/shared";
 import type {
+  CryptoDetail,
+  CryptoListResponse,
   AuthSuccessResponse,
+  FavoriteListResponse,
+  FavoritesResponse,
+  ListCryptoQuery,
   LoginInput,
   RegisterInput,
   UserProfile
@@ -178,4 +188,68 @@ export async function logout(): Promise<void> {
 
   accessToken = null;
   currentUser = null;
+}
+
+export async function listCryptos(
+  query: Partial<ListCryptoQuery> = {}
+): Promise<CryptoListResponse> {
+  const parsed = listCryptoQuerySchema.partial().parse(query);
+  const params = new URLSearchParams();
+
+  if (parsed.search) params.set("search", parsed.search);
+  if (parsed.type) params.set("type", parsed.type);
+  if (parsed.page) params.set("page", String(parsed.page));
+  if (parsed.limit) params.set("limit", String(parsed.limit));
+
+  const suffix = params.toString();
+  const path = suffix.length > 0 ? `/crypto?${suffix}` : "/crypto";
+  const response = await requestWithAuth(path);
+  assertOk(response, "Falha ao carregar criptomoedas");
+
+  return cryptoListResponseSchema.parse(await parseJson(response));
+}
+
+export async function getCryptoDetail(coinId: string): Promise<CryptoDetail> {
+  const normalizedCoinId = coinId.trim();
+  if (!normalizedCoinId) {
+    throw new Error("CoinId invalido");
+  }
+
+  const response = await requestWithAuth(`/crypto/${encodeURIComponent(normalizedCoinId)}`);
+  assertOk(response, "Falha ao carregar detalhes da criptomoeda");
+  return cryptoDetailSchema.parse(await parseJson(response));
+}
+
+export async function addFavorite(coinId: string): Promise<FavoritesResponse> {
+  const normalizedCoinId = coinId.trim();
+  if (!normalizedCoinId) {
+    throw new Error("CoinId invalido");
+  }
+
+  const response = await requestWithAuth(`/users/me/favorites/${encodeURIComponent(normalizedCoinId)}`, {
+    method: "POST"
+  });
+  assertOk(response, "Falha ao adicionar favorito");
+
+  return favoritesResponseSchema.parse(await parseJson(response));
+}
+
+export async function removeFavorite(coinId: string): Promise<FavoritesResponse> {
+  const normalizedCoinId = coinId.trim();
+  if (!normalizedCoinId) {
+    throw new Error("CoinId invalido");
+  }
+
+  const response = await requestWithAuth(`/users/me/favorites/${encodeURIComponent(normalizedCoinId)}`, {
+    method: "DELETE"
+  });
+  assertOk(response, "Falha ao remover favorito");
+
+  return favoritesResponseSchema.parse(await parseJson(response));
+}
+
+export async function listFavorites(): Promise<FavoriteListResponse> {
+  const response = await requestWithAuth("/users/me/favorites");
+  assertOk(response, "Falha ao listar favoritos");
+  return favoriteListResponseSchema.parse(await parseJson(response));
 }

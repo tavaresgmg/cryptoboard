@@ -126,3 +126,60 @@ h2 {
 .link:hover {
   text-decoration: underline;
 }
+
+.filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.filters input,
+.filters select {
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+}
+
+.crypto-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.crypto-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #e0f2fe;
+  border-radius: 10px;
+  padding: 0.55rem;
+}
+
+.link-button {
+  border: 0;
+  background: transparent;
+  color: #0369a1;
+  font-weight: 700;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pagination {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .filters {
+    grid-template-columns: 1fr 140px auto;
+  }
+}

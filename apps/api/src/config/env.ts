@@ -6,6 +6,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_ORIGIN: z.string().default("http://localhost:5173"),
   MONGODB_URI: z.string().default("mongodb://localhost:27017/erictel"),
+  COINPAPRIKA_BASE_URL: z.url().default("https://api.coinpaprika.com/v1"),
   JWT_SECRET: z
     .string()
     .min(16, "JWT_SECRET deve ter ao menos 16 caracteres")
