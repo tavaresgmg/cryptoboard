@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+.output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+
+# Uploads (local dev)
+uploads/
+
+# Playwright
+test-results/
+playwright-report/
+
+# Docker
+docker/data/
+
+# Turbo
+.turbo/
+
+# Project docs (not versioned by request)
+docs/
