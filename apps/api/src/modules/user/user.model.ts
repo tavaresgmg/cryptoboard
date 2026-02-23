@@ -8,9 +8,12 @@ export interface User {
   email: string;
   passwordHash: string;
   description?: string;
+  avatarKey?: string;
   preferredCurrency: SupportedCurrency;
   favorites: string[];
   refreshTokenHash?: string;
+  passwordResetTokenHash?: string;
+  passwordResetTokenExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +42,9 @@ const userSchema = new mongoose.Schema<User>(
       type: String,
       maxlength: 500
     },
+    avatarKey: {
+      type: String
+    },
     preferredCurrency: {
       type: String,
       enum: supportedCurrencies,
@@ -50,6 +56,12 @@ const userSchema = new mongoose.Schema<User>(
     },
     refreshTokenHash: {
       type: String
+    },
+    passwordResetTokenHash: {
+      type: String
+    },
+    passwordResetTokenExpiresAt: {
+      type: Date
     }
   },
   {

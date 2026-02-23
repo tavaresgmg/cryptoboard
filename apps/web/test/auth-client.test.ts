@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "/api";
 const originalFetch = globalThis.fetch;
 
 function jsonResponse(payload: unknown, status = 200): Response {
@@ -52,6 +52,7 @@ function profilePayload() {
     id: "user-1",
     name: "User One",
     email: "user@example.com",
+    hasAvatar: false,
     preferredCurrency: "USD",
     favorites: [],
     createdAt: "2026-02-23T00:00:00.000Z",
@@ -151,7 +152,7 @@ describe("auth-client", () => {
 
       if (url.startsWith(`${API_URL}/crypto`)) {
         cryptoCalls += 1;
-        const parsed = new URL(url);
+        const parsed = new URL(url, "http://localhost");
         expect(parsed.searchParams.get("search")).toBe("bit");
         expect(parsed.searchParams.get("type")).toBe("coin");
         expect(parsed.searchParams.get("page")).toBe("1");
@@ -250,5 +251,85 @@ describe("auth-client", () => {
 
     expect(client.isAuthenticated()).toBe(false);
     expect(client.getCurrentUser()).toBeNull();
+  });
+
+  test("forgotPassword e resetPassword devem enviar payloads esperados", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = resolveUrl(input);
+
+      if (url === `${API_URL}/auth/forgot-password`) {
+        expect(init?.method).toBe("POST");
+        expect(init?.body).toBe(JSON.stringify({ email: "user@example.com" }));
+        return jsonResponse({ message: "ok" });
+      }
+
+      if (url === `${API_URL}/auth/reset-password`) {
+        expect(init?.method).toBe("POST");
+        expect(init?.body).toBe(JSON.stringify({ token: "token-123", password: "12345678" }));
+        return jsonResponse({ message: "ok" });
+      }
+
+      throw new Error(`URL inesperada: ${url}`);
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const client = await loadClient();
+
+    const forgotResult = await client.forgotPassword({ email: "user@example.com" });
+    const resetResult = await client.resetPassword({ token: "token-123", password: "12345678" });
+
+    expect(forgotResult.message).toBe("ok");
+    expect(resetResult.message).toBe("ok");
+  });
+
+  test("updateMyProfile deve atualizar estado local do usuario", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = resolveUrl(input);
+
+      if (url === `${API_URL}/auth/login`) {
+        return jsonResponse({
+          accessToken: "access-token-login",
+          user: {
+            id: "user-1",
+            name: "User One",
+            email: "user@example.com"
+          }
+        });
+      }
+
+      if (url === `${API_URL}/users/me` && init?.method !== "PUT") {
+        return jsonResponse(profilePayload());
+      }
+
+      if (url === `${API_URL}/users/me` && init?.method === "PUT") {
+        expect(readHeader(init.headers, "Authorization")).toBe("Bearer access-token-login");
+        expect(init.body).toBe(
+          JSON.stringify({
+            name: "Updated Name",
+            preferredCurrency: "BRL"
+          })
+        );
+        return jsonResponse({
+          ...profilePayload(),
+          name: "Updated Name",
+          preferredCurrency: "BRL"
+        });
+      }
+
+      throw new Error(`URL inesperada: ${url}`);
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const client = await loadClient();
+
+    await client.login({ email: "user@example.com", password: "12345678" });
+    const updated = await client.updateMyProfile({
+      name: "Updated Name",
+      preferredCurrency: "BRL"
+    });
+
+    expect(updated.name).toBe("Updated Name");
+    expect(updated.preferredCurrency).toBe("BRL");
+    expect(client.getCurrentUser()?.name).toBe("Updated Name");
   });
 });

@@ -1,7 +1,27 @@
+@import "tailwindcss";
+
 :root {
+  --text-color: #102a43;
+  --background-gradient: linear-gradient(145deg, #f0f9ff 0%, #dbeafe 100%);
+  --card-bg: #ffffff;
+  --card-border: #bfdbfe;
+  --panel-bg: #f8fbff;
+  --panel-border: #dbeafe;
+  --input-border: #bfdbfe;
+
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: #102a43;
-  background: linear-gradient(145deg, #f0f9ff 0%, #dbeafe 100%);
+  color: var(--text-color);
+  background: var(--background-gradient);
+}
+
+:root[data-theme="dark"] {
+  --text-color: #dbeafe;
+  --background-gradient: linear-gradient(145deg, #020617 0%, #0f172a 100%);
+  --card-bg: #0b1221;
+  --card-border: #1e293b;
+  --panel-bg: #111827;
+  --panel-border: #334155;
+  --input-border: #334155;
 }
 
 * {
@@ -11,6 +31,47 @@
 body {
   margin: 0;
   min-height: 100vh;
+  color: var(--text-color);
+  background: var(--background-gradient);
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.theme-toggle {
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.locale-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.locale-switcher select {
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  padding: 0.35rem 0.55rem;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font: inherit;
 }
 
 .container {
@@ -22,8 +83,8 @@ body {
 
 .card {
   width: min(100%, 540px);
-  background: #ffffff;
-  border: 1px solid #bfdbfe;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 20px 40px rgba(12, 74, 110, 0.12);
@@ -69,9 +130,20 @@ h2 {
 }
 
 .field input {
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--input-border);
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font: inherit;
+}
+
+.field select {
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  background: var(--card-bg);
+  color: var(--text-color);
   font: inherit;
 }
 
@@ -110,11 +182,11 @@ h2 {
 }
 
 .panel {
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--panel-border);
   border-radius: 12px;
   padding: 0.8rem;
   margin-top: 0.8rem;
-  background: #f8fbff;
+  background: var(--panel-bg);
 }
 
 .link {
@@ -136,9 +208,11 @@ h2 {
 
 .filters input,
 .filters select {
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--input-border);
   border-radius: 10px;
   padding: 0.55rem 0.7rem;
+  background: var(--card-bg);
+  color: var(--text-color);
   font: inherit;
 }
 

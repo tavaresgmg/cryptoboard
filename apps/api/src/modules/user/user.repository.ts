@@ -1,4 +1,4 @@
-import type { AuthUser, UserProfile } from "@crypto/shared";
+import type { AuthUser, UpdateUserProfileInput, UserProfile } from "@crypto/shared";
 
 import { UserModel, type UserDocument } from "./user.model.js";
 
@@ -79,6 +79,95 @@ class UserRepository {
       { new: true }
     ).exec();
   }
+
+  async updateProfile(
+    userId: string,
+    input: UpdateUserProfileInput
+  ): Promise<UserDocument | null> {
+    const update: Partial<{
+      name: string;
+      email: string;
+      description: string | undefined;
+      preferredCurrency: UpdateUserProfileInput["preferredCurrency"];
+    }> = {};
+
+    if (input.name !== undefined) {
+      update.name = input.name.trim();
+    }
+
+    if (input.email !== undefined) {
+      update.email = normalizeEmail(input.email);
+    }
+
+    if (input.description !== undefined) {
+      update.description = input.description;
+    }
+
+    if (input.preferredCurrency !== undefined) {
+      update.preferredCurrency = input.preferredCurrency;
+    }
+
+    return UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: update
+      },
+      { new: true }
+    ).exec();
+  }
+
+  async setPasswordResetToken(
+    userId: string,
+    passwordResetTokenHash: string,
+    expiresAt: Date
+  ): Promise<void> {
+    await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          passwordResetTokenHash,
+          passwordResetTokenExpiresAt: expiresAt
+        }
+      },
+      { new: false }
+    ).exec();
+  }
+
+  async findByPasswordResetTokenHash(tokenHash: string): Promise<UserDocument | null> {
+    return UserModel.findOne({
+      passwordResetTokenHash: tokenHash,
+      passwordResetTokenExpiresAt: { $gt: new Date() }
+    }).exec();
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          passwordHash
+        },
+        $unset: {
+          refreshTokenHash: 1,
+          passwordResetTokenHash: 1,
+          passwordResetTokenExpiresAt: 1
+        }
+      },
+      { new: false }
+    ).exec();
+  }
+
+  async setAvatarKey(userId: string, avatarKey: string): Promise<UserDocument | null> {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          avatarKey
+        }
+      },
+      { new: true }
+    ).exec();
+  }
 }
 
 export const userRepository = new UserRepository();
@@ -97,6 +186,7 @@ export function toUserProfile(user: UserDocument): UserProfile {
     name: user.name,
     email: user.email,
     description: user.description ?? undefined,
+    hasAvatar: Boolean(user.avatarKey),
     preferredCurrency: user.preferredCurrency,
     favorites: user.favorites,
     createdAt: user.createdAt.toISOString(),

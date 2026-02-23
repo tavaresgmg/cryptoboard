@@ -8,6 +8,8 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 
 import type { AppEnv } from "../src/config/env.js";
 import { connectDatabase, disconnectDatabase } from "../src/config/db.js";
+import { hashToken } from "../src/lib/security.js";
+import { UserModel } from "../src/modules/user/user.model.js";
 import { buildServer } from "../src/server.js";
 
 interface RegisterResponse {
@@ -243,8 +245,20 @@ function createTestEnv(mongoUri: string): AppEnv {
     HOST: "127.0.0.1",
     PORT: 3000,
     WEB_ORIGIN: "http://localhost:5173",
+    WEB_APP_URL: "http://localhost:5173",
     MONGODB_URI: mongoUri,
     COINPAPRIKA_BASE_URL: `https://coinpaprika.test/${randomUUID()}`,
+    S3_ENDPOINT: "http://localhost:9000",
+    S3_PUBLIC_ENDPOINT: "http://localhost:9000",
+    S3_REGION: "us-east-1",
+    S3_ACCESS_KEY: "minioadmin",
+    S3_SECRET_KEY: "minioadmin",
+    S3_BUCKET: "avatars",
+    AVATAR_MAX_BYTES: 2 * 1024 * 1024,
+    RATE_LIMIT_MAX: 100,
+    RATE_LIMIT_TIME_WINDOW: "1 minute",
+    RESEND_API_KEY: undefined,
+    RESEND_FROM: undefined,
     JWT_SECRET: "test-secret-change-me-please",
     JWT_ACCESS_EXPIRATION: "15m",
     JWT_REFRESH_EXPIRATION: "7d"
@@ -443,5 +457,138 @@ describe("Auth + Crypto + Favorites integration", () => {
       url: "/crypto"
     });
     assert.equal(cryptoResponse.statusCode, 401);
+  });
+
+  test("deve atualizar perfil do usuario autenticado", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Profile",
+        email: `user-${randomUUID()}@example.com`,
+        password: "12345678"
+      }
+    });
+
+    assert.equal(registerResponse.statusCode, 201);
+    const authPayload = parseJson<RegisterResponse>(registerResponse.body);
+
+    const updateResponse = await app.inject({
+      method: "PUT",
+      url: "/users/me",
+      headers: authHeaders(authPayload.accessToken),
+      payload: {
+        name: "User Profile Updated",
+        description: "Descricao de teste",
+        preferredCurrency: "BRL"
+      }
+    });
+    assert.equal(updateResponse.statusCode, 200);
+
+    const meResponse = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeaders(authPayload.accessToken)
+    });
+    assert.equal(meResponse.statusCode, 200);
+    const mePayload = parseJson<{
+      name: string;
+      description?: string;
+      preferredCurrency: string;
+      hasAvatar: boolean;
+    }>(meResponse.body);
+
+    assert.equal(mePayload.name, "User Profile Updated");
+    assert.equal(mePayload.description, "Descricao de teste");
+    assert.equal(mePayload.preferredCurrency, "BRL");
+    assert.equal(mePayload.hasAvatar, false);
+  });
+
+  test("deve permitir forgot/reset password e bloquear senha antiga", async () => {
+    const originalPassword = "12345678";
+    const newPassword = "98765432";
+    const email = `user-${randomUUID()}@example.com`;
+
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Reset Password",
+        email,
+        password: originalPassword
+      }
+    });
+    assert.equal(registerResponse.statusCode, 201);
+
+    const forgotResponse = await app.inject({
+      method: "POST",
+      url: "/auth/forgot-password",
+      payload: {
+        email
+      }
+    });
+    assert.equal(forgotResponse.statusCode, 200);
+
+    const resetToken = `token-${randomUUID()}`;
+    const tokenHash = hashToken(resetToken);
+    const user = await UserModel.findOne({ email }).exec();
+    assert.ok(user);
+    await UserModel.findByIdAndUpdate(user!._id, {
+      $set: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetTokenExpiresAt: new Date(Date.now() + 5 * 60 * 1000)
+      }
+    }).exec();
+
+    const resetResponse = await app.inject({
+      method: "POST",
+      url: "/auth/reset-password",
+      payload: {
+        token: resetToken,
+        password: newPassword
+      }
+    });
+    assert.equal(resetResponse.statusCode, 200);
+
+    const loginWithOldPassword = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: {
+        email,
+        password: originalPassword
+      }
+    });
+    assert.equal(loginWithOldPassword.statusCode, 401);
+
+    const loginWithNewPassword = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: {
+        email,
+        password: newPassword
+      }
+    });
+    assert.equal(loginWithNewPassword.statusCode, 200);
+  });
+
+  test("deve validar upload de avatar quando arquivo nao for enviado", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Avatar",
+        email: `user-${randomUUID()}@example.com`,
+        password: "12345678"
+      }
+    });
+    assert.equal(registerResponse.statusCode, 201);
+    const authPayload = parseJson<RegisterResponse>(registerResponse.body);
+
+    const avatarResponse = await app.inject({
+      method: "PUT",
+      url: "/users/me/avatar",
+      headers: authHeaders(authPayload.accessToken)
+    });
+    assert.equal(avatarResponse.statusCode, 400);
   });
 });

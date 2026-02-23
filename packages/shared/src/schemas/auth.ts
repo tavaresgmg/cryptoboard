@@ -34,3 +34,22 @@ export const logoutResponseSchema = z.object({
 });
 
 export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
+
+export const forgotPasswordInputSchema = z.object({
+  email: z.email("Email invalido")
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordInputSchema>;
+
+export const resetPasswordInputSchema = z.object({
+  token: z.string().min(1, "Token obrigatorio"),
+  password: z.string().min(8, "Minimo 8 caracteres")
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;
+
+export const authMessageResponseSchema = z.object({
+  message: z.string()
+});
+
+export type AuthMessageResponse = z.infer<typeof authMessageResponseSchema>;

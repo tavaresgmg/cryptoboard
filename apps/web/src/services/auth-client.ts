@@ -1,33 +1,59 @@
 import {
   accessTokenResponseSchema,
+  authMessageResponseSchema,
   authSuccessResponseSchema,
+  avatarUpdateResponseSchema,
   cryptoDetailSchema,
   cryptoListResponseSchema,
   favoriteListResponseSchema,
   favoritesResponseSchema,
+  forgotPasswordInputSchema,
   listCryptoQuerySchema,
   loginInputSchema,
   logoutResponseSchema,
   registerInputSchema,
+  resetPasswordInputSchema,
+  updateUserProfileInputSchema,
   userProfileSchema
 } from "@crypto/shared";
 import type {
+  AuthMessageResponse,
+  AvatarUpdateResponse,
   CryptoDetail,
   CryptoListResponse,
   AuthSuccessResponse,
   FavoriteListResponse,
   FavoritesResponse,
+  ForgotPasswordInput,
   ListCryptoQuery,
   LoginInput,
+  ResetPasswordInput,
   RegisterInput,
+  UpdateUserProfileInput,
   UserProfile
 } from "@crypto/shared";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 
 let accessToken: string | null = null;
 let currentUser: UserProfile | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
+
+function hasContentTypeHeader(headers: RequestInit["headers"]): boolean {
+  if (!headers) {
+    return false;
+  }
+
+  if (headers instanceof Headers) {
+    return headers.has("content-type");
+  }
+
+  if (Array.isArray(headers)) {
+    return headers.some(([key]) => key.toLowerCase() === "content-type");
+  }
+
+  return Object.keys(headers).some((key) => key.toLowerCase() === "content-type");
+}
 
 async function parseJson<T>(response: Response): Promise<T> {
   const payload = await response.json();
@@ -39,10 +65,13 @@ async function requestWithAuth(
   init: RequestInit = {},
   retryOnUnauthorized = true
 ): Promise<Response> {
+  const isFormDataBody = init.body instanceof FormData;
+  const shouldSetJsonContentType = !isFormDataBody && !hasContentTypeHeader(init.headers);
+
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(shouldSetJsonContentType ? { "Content-Type": "application/json" } : {}),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init.headers ?? {})
     },
@@ -61,7 +90,7 @@ async function requestWithAuth(
   return fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(shouldSetJsonContentType ? { "Content-Type": "application/json" } : {}),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init.headers ?? {})
     },
@@ -252,4 +281,55 @@ export async function listFavorites(): Promise<FavoriteListResponse> {
   const response = await requestWithAuth("/users/me/favorites");
   assertOk(response, "Falha ao listar favoritos");
   return favoriteListResponseSchema.parse(await parseJson(response));
+}
+
+export async function forgotPassword(input: ForgotPasswordInput): Promise<AuthMessageResponse> {
+  const body = forgotPasswordInputSchema.parse(input);
+  const response = await fetch(`${API_URL}/auth/forgot-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  assertOk(response, "Falha ao solicitar redefinicao de senha");
+  return authMessageResponseSchema.parse(await parseJson(response));
+}
+
+export async function resetPassword(input: ResetPasswordInput): Promise<AuthMessageResponse> {
+  const body = resetPasswordInputSchema.parse(input);
+  const response = await fetch(`${API_URL}/auth/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  assertOk(response, "Falha ao redefinir senha");
+  return authMessageResponseSchema.parse(await parseJson(response));
+}
+
+export async function updateMyProfile(input: UpdateUserProfileInput): Promise<UserProfile> {
+  const body = updateUserProfileInputSchema.parse(input);
+  const response = await requestWithAuth("/users/me", {
+    method: "PUT",
+    body: JSON.stringify(body)
+  });
+  assertOk(response, "Falha ao atualizar perfil");
+
+  const payload = userProfileSchema.parse(await parseJson(response));
+  currentUser = payload;
+  return payload;
+}
+
+export async function uploadAvatar(file: File): Promise<AvatarUpdateResponse> {
+  const formData = new FormData();
+  formData.set("avatar", file);
+
+  const response = await requestWithAuth("/users/me/avatar", {
+    method: "PUT",
+    body: formData
+  });
+  assertOk(response, "Falha ao enviar avatar");
+  return avatarUpdateResponseSchema.parse(await parseJson(response));
 }

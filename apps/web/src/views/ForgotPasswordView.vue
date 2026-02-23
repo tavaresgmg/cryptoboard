@@ -1,32 +1,24 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 
 import Button from "../components/ui/Button.vue";
-import { login } from "../services/auth-client";
+import { forgotPassword } from "../services/auth-client";
 
-const router = useRouter();
-const route = useRoute();
 const { t } = useI18n();
-
 const email = ref("");
-const password = ref("");
 const loading = ref(false);
 const error = ref<string | null>(null);
+const message = ref<string | null>(null);
 
 async function submit() {
   loading.value = true;
   error.value = null;
+  message.value = null;
 
   try {
-    await login({
-      email: email.value,
-      password: password.value
-    });
-
-    const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/";
-    await router.push(redirect);
+    const response = await forgotPassword({ email: email.value });
+    message.value = response.message;
   } catch (unknownError) {
     error.value = unknownError instanceof Error ? unknownError.message : "Erro inesperado";
   } finally {
@@ -38,8 +30,8 @@ async function submit() {
 <template>
   <main class="container">
     <section class="card">
-      <h1>{{ t("auth.loginTitle") }}</h1>
-      <p>{{ t("auth.loginSubtitle") }}</p>
+      <h1>{{ t("auth.forgotTitle") }}</h1>
+      <p>{{ t("auth.forgotSubtitle") }}</p>
 
       <form class="form" @submit.prevent="submit">
         <label class="field">
@@ -47,20 +39,15 @@ async function submit() {
           <input v-model="email" type="email" autocomplete="email" required />
         </label>
 
-        <label class="field">
-          <span>{{ t("common.password") }}</span>
-          <input v-model="password" type="password" autocomplete="current-password" required />
-        </label>
-
         <Button type="submit" :disabled="loading">
-          {{ loading ? `${t("common.loading")}` : t("auth.loginAction") }}
+          {{ loading ? t("common.loading") : t("auth.forgotAction") }}
         </Button>
       </form>
 
+      <p v-if="message">{{ message }}</p>
       <p v-if="error" class="error">{{ error }}</p>
 
-      <RouterLink class="link" to="/register">{{ t("auth.createAccount") }}</RouterLink>
-      <RouterLink class="link" to="/forgot-password">{{ t("auth.forgotPassword") }}</RouterLink>
+      <RouterLink class="link" to="/login">{{ t("auth.loginAction") }}</RouterLink>
     </section>
   </main>
 </template>

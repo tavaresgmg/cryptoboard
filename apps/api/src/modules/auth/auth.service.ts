@@ -1,14 +1,23 @@
 import type {
   AccessTokenResponse,
+  AuthMessageResponse,
   AuthSuccessResponse,
+  ForgotPasswordInput,
   LoginInput
 } from "@crypto/shared";
-import { loginInputSchema, registerInputSchema } from "@crypto/shared";
+import {
+  forgotPasswordInputSchema,
+  loginInputSchema,
+  registerInputSchema,
+  resetPasswordInputSchema
+} from "@crypto/shared";
 import type { FastifyInstance } from "fastify";
+import { randomBytes } from "node:crypto";
 
 import type { AppEnv } from "../../config/env.js";
 import { AppError } from "../../lib/app-error.js";
 import { hashPassword, hashToken, verifyPassword } from "../../lib/security.js";
+import { sendResetPasswordEmail } from "../../services/email.service.js";
 import { userRepository, toAuthUser } from "../user/user.repository.js";
 import { issueSessionTokens, verifyToken } from "./auth.tokens.js";
 
@@ -131,4 +140,47 @@ export async function refreshSession(
 
 export async function logoutUser(userId: string): Promise<void> {
   await userRepository.clearRefreshTokenHash(userId);
+}
+
+export async function forgotPassword(
+  env: AppEnv,
+  input: unknown
+): Promise<AuthMessageResponse> {
+  const parsed: ForgotPasswordInput = forgotPasswordInputSchema.parse(input);
+  const user = await userRepository.findByEmail(parsed.email);
+
+  // Sempre devolve mensagem generica para evitar enumeracao de usuarios.
+  if (!user) {
+    return {
+      message: "Se o email existir, enviaremos instrucoes de redefinicao"
+    };
+  }
+
+  const resetToken = randomBytes(32).toString("hex");
+  const resetTokenHash = hashToken(resetToken);
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+
+  await userRepository.setPasswordResetToken(user._id.toString(), resetTokenHash, expiresAt);
+  await sendResetPasswordEmail(env, { to: user.email, token: resetToken });
+
+  return {
+    message: "Se o email existir, enviaremos instrucoes de redefinicao"
+  };
+}
+
+export async function resetPassword(input: unknown): Promise<AuthMessageResponse> {
+  const parsed = resetPasswordInputSchema.parse(input);
+  const resetTokenHash = hashToken(parsed.token);
+
+  const user = await userRepository.findByPasswordResetTokenHash(resetTokenHash);
+  if (!user) {
+    throw new AppError("Token de redefinicao invalido ou expirado", 400);
+  }
+
+  const passwordHash = await hashPassword(parsed.password);
+  await userRepository.updatePassword(user._id.toString(), passwordHash);
+
+  return {
+    message: "Senha redefinida com sucesso"
+  };
 }

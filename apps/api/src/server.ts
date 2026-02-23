@@ -9,7 +9,9 @@ import healthRoutes from "./modules/health/health.routes.js";
 import userRoutes from "./modules/user/user.routes.js";
 import { registerAuth } from "./plugins/auth.js";
 import { registerCors } from "./plugins/cors.js";
+import { registerSecurity } from "./plugins/security.js";
 import { registerSwagger } from "./plugins/swagger.js";
+import { registerUpload } from "./plugins/upload.js";
 
 export async function buildServer(env: AppEnv) {
   const app = Fastify({
@@ -17,7 +19,9 @@ export async function buildServer(env: AppEnv) {
   });
 
   await registerCors(app, env);
+  await registerSecurity(app, env);
   await registerAuth(app, env);
+  await registerUpload(app, env);
   await registerSwagger(app);
 
   app.setErrorHandler((error, _request, reply) => {

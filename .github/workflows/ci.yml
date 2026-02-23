@@ -44,3 +44,9 @@ jobs:
 
       - name: Web tests
         run: pnpm --filter web test
+
+      - name: Install Playwright browsers
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Web E2E
+        run: pnpm --filter web test:e2e

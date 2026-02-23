@@ -7,6 +7,7 @@ export const userProfileSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.email(),
   description: z.string().max(500).optional(),
+  hasAvatar: z.boolean().default(false),
   preferredCurrency: preferredCurrencySchema.default("USD"),
   favorites: z.array(z.string()).max(50),
   createdAt: z.iso.datetime(),
@@ -31,3 +32,9 @@ export const updateUserProfileInputSchema = z.object({
 });
 
 export type UpdateUserProfileInput = z.infer<typeof updateUserProfileInputSchema>;
+
+export const avatarUpdateResponseSchema = z.object({
+  message: z.string()
+});
+
+export type AvatarUpdateResponse = z.infer<typeof avatarUpdateResponseSchema>;

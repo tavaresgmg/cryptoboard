@@ -11,17 +11,24 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
+    "seed": "tsx src/scripts/seed.ts",
     "test": "NODE_ENV=test tsx --test --test-concurrency=1 test/**/*.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.995.0",
+    "@aws-sdk/s3-request-presigner": "^3.995.0",
     "@crypto/shared": "workspace:*",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
+    "@fastify/helmet": "^13.0.2",
     "@fastify/jwt": "^10.0.0",
+    "@fastify/multipart": "^9.4.0",
+    "@fastify/rate-limit": "^10.3.0",
     "@fastify/swagger": "^9.5.2",
     "@fastify/swagger-ui": "^5.2.3",
     "fastify": "^5.6.1",
     "mongoose": "^8.19.3",
+    "resend": "^6.9.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 
+import Button from "../components/ui/Button.vue";
 import { register } from "../services/auth-client";
 
 const router = useRouter();
+const { t } = useI18n();
 
 const name = ref("");
 const email = ref("");
@@ -35,8 +38,8 @@ async function submit() {
 <template>
   <main class="container">
     <section class="card">
-      <h1>Criar conta</h1>
-      <p>Cadastre um usuário para iniciar o fluxo autenticado.</p>
+      <h1>{{ t("auth.registerTitle") }}</h1>
+      <p>{{ t("auth.registerSubtitle") }}</p>
 
       <form class="form" @submit.prevent="submit">
         <label class="field">
@@ -54,9 +57,9 @@ async function submit() {
           <input v-model="password" type="password" autocomplete="new-password" minlength="8" required />
         </label>
 
-        <button class="button" type="submit" :disabled="loading">
-          {{ loading ? "Criando conta..." : "Registrar" }}
-        </button>
+        <Button type="submit" :disabled="loading">
+          {{ loading ? t("common.loading") : t("auth.registerAction") }}
+        </Button>
       </form>
 
       <p v-if="error" class="error">{{ error }}</p>

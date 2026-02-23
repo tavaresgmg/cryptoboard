@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 
 import type { CryptoDetail, CryptoListItem, HealthResponse, UserProfile } from "@crypto/shared";
 
+import Button from "../components/ui/Button.vue";
 import {
   addFavorite,
   fetchMe,
@@ -11,10 +13,13 @@ import {
   getCurrentUser,
   listCryptos,
   logout,
-  removeFavorite
+  removeFavorite,
+  updateMyProfile,
+  uploadAvatar
 } from "../services/auth-client";
 
 const router = useRouter();
+const { t } = useI18n();
 
 const user = ref<UserProfile | null>(getCurrentUser());
 const health = ref<HealthResponse | null>(null);
@@ -30,8 +35,16 @@ const total = ref(0);
 const search = ref("");
 const type = ref<"coin" | "token" | "">("");
 const error = ref<string | null>(null);
+const profileMessage = ref<string | null>(null);
+const avatarMessage = ref<string | null>(null);
+const savingProfile = ref(false);
+const uploadingAvatar = ref(false);
+const profileName = ref("");
+const profileDescription = ref("");
+const profileCurrency = ref<"USD" | "EUR" | "BRL" | "GBP">("USD");
+const avatarFile = ref<File | null>(null);
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 
 async function loadProfile() {
   loadingProfile.value = true;
@@ -39,6 +52,9 @@ async function loadProfile() {
 
   try {
     user.value = await fetchMe();
+    profileName.value = user.value.name;
+    profileDescription.value = user.value.description ?? "";
+    profileCurrency.value = user.value.preferredCurrency;
   } catch (unknownError) {
     error.value = unknownError instanceof Error ? unknownError.message : "Erro inesperado";
   } finally {
@@ -152,6 +168,51 @@ async function applyFilters() {
   await loadCryptos();
 }
 
+async function saveProfile() {
+  savingProfile.value = true;
+  profileMessage.value = null;
+  error.value = null;
+
+  try {
+    const updated = await updateMyProfile({
+      name: profileName.value,
+      description: profileDescription.value || undefined,
+      preferredCurrency: profileCurrency.value
+    });
+    user.value = updated;
+    profileMessage.value = "Perfil atualizado com sucesso";
+  } catch (unknownError) {
+    error.value = unknownError instanceof Error ? unknownError.message : "Erro inesperado";
+  } finally {
+    savingProfile.value = false;
+  }
+}
+
+function onAvatarChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  avatarFile.value = target.files?.[0] ?? null;
+}
+
+async function submitAvatar() {
+  if (!avatarFile.value) {
+    return;
+  }
+
+  uploadingAvatar.value = true;
+  avatarMessage.value = null;
+  error.value = null;
+
+  try {
+    const response = await uploadAvatar(avatarFile.value);
+    avatarMessage.value = response.message;
+    await loadProfile();
+  } catch (unknownError) {
+    error.value = unknownError instanceof Error ? unknownError.message : "Erro inesperado";
+  } finally {
+    uploadingAvatar.value = false;
+  }
+}
+
 async function signOut() {
   await logout();
   await router.push("/login");
@@ -166,8 +227,8 @@ onMounted(async () => {
   <main class="container">
     <section class="card">
       <div class="header-row">
-        <h1>Dashboard</h1>
-        <button class="button button-secondary" type="button" @click="signOut">Sair</button>
+        <h1>{{ t("dashboard.title") }}</h1>
+        <Button variant="secondary" type="button" @click="signOut">{{ t("dashboard.signOut") }}</Button>
       </div>
       <p>Área protegida por JWT. Sessão persistida via refresh token em cookie HttpOnly.</p>
 
@@ -178,7 +239,46 @@ onMounted(async () => {
           <p><strong>Nome:</strong> {{ user.name }}</p>
           <p><strong>Email:</strong> {{ user.email }}</p>
           <p><strong>Moeda preferida:</strong> {{ user.preferredCurrency }}</p>
+          <p><strong>Avatar:</strong> {{ user.hasAvatar ? "Configurado" : "Nao configurado" }}</p>
         </template>
+
+        <form class="form" @submit.prevent="saveProfile">
+          <label class="field">
+            <span>Nome</span>
+            <input v-model="profileName" type="text" minlength="2" required />
+          </label>
+
+          <label class="field">
+            <span>Descricao</span>
+            <input v-model="profileDescription" type="text" maxlength="500" />
+          </label>
+
+          <label class="field">
+            <span>Moeda preferida</span>
+            <select v-model="profileCurrency">
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="BRL">BRL</option>
+              <option value="GBP">GBP</option>
+            </select>
+          </label>
+
+          <Button type="submit" :disabled="savingProfile">
+            {{ savingProfile ? "Salvando..." : "Salvar perfil" }}
+          </Button>
+        </form>
+        <p v-if="profileMessage">{{ profileMessage }}</p>
+
+        <form class="form" @submit.prevent="submitAvatar">
+          <label class="field">
+            <span>Avatar</span>
+            <input type="file" accept="image/*" @change="onAvatarChange" />
+          </label>
+          <Button variant="secondary" type="submit" :disabled="uploadingAvatar || !avatarFile">
+            {{ uploadingAvatar ? "Enviando..." : "Enviar avatar" }}
+          </Button>
+        </form>
+        <p v-if="avatarMessage">{{ avatarMessage }}</p>
       </div>
 
       <div class="panel">
@@ -194,7 +294,7 @@ onMounted(async () => {
             <option value="coin">Coin</option>
             <option value="token">Token</option>
           </select>
-          <button class="button" type="submit">Filtrar</button>
+          <Button type="submit">Filtrar</Button>
         </form>
 
         <p v-if="loadingCryptos">Carregando criptomoedas...</p>
@@ -204,20 +304,20 @@ onMounted(async () => {
               {{ coin.name }} ({{ coin.symbol }})
             </button>
             <span>{{ coin.price !== undefined ? `$ ${coin.price.toFixed(2)}` : "—" }}</span>
-            <button
-              class="button button-secondary"
+            <Button
+              variant="secondary"
               type="button"
               @click="toggleFavorite(coin.id)"
             >
               {{ isFavorite(coin.id) ? "Desfavoritar" : "Favoritar" }}
-            </button>
+            </Button>
           </li>
         </ul>
 
         <div class="pagination">
-          <button class="button button-secondary" type="button" @click="previousPage">Anterior</button>
+          <Button variant="secondary" type="button" @click="previousPage">Anterior</Button>
           <span>Página {{ page }} · Total {{ total }}</span>
-          <button class="button button-secondary" type="button" @click="nextPage">Próxima</button>
+          <Button variant="secondary" type="button" @click="nextPage">Próxima</Button>
         </div>
       </div>
 

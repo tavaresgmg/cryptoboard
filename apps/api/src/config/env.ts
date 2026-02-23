@@ -5,8 +5,20 @@ const envSchema = z.object({
   HOST: z.string().default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_ORIGIN: z.string().default("http://localhost:5173"),
+  WEB_APP_URL: z.url().default("http://localhost:5173"),
   MONGODB_URI: z.string().default("mongodb://localhost:27017/erictel"),
   COINPAPRIKA_BASE_URL: z.url().default("https://api.coinpaprika.com/v1"),
+  S3_ENDPOINT: z.url().default("http://localhost:9000"),
+  S3_PUBLIC_ENDPOINT: z.url().optional(),
+  S3_REGION: z.string().default("us-east-1"),
+  S3_ACCESS_KEY: z.string().default("minioadmin"),
+  S3_SECRET_KEY: z.string().default("minioadmin"),
+  S3_BUCKET: z.string().default("avatars"),
+  AVATAR_MAX_BYTES: z.coerce.number().int().positive().default(2 * 1024 * 1024),
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.email().optional(),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  RATE_LIMIT_TIME_WINDOW: z.string().default("1 minute"),
   JWT_SECRET: z
     .string()
     .min(16, "JWT_SECRET deve ter ao menos 16 caracteres")

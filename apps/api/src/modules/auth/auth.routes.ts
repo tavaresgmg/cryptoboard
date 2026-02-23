@@ -2,8 +2,11 @@ import type { FastifyPluginAsync } from "fastify";
 
 import type {
   AccessTokenResponse,
+  AuthMessageResponse,
   AuthSuccessResponse,
+  ForgotPasswordInput,
   LogoutResponse,
+  ResetPasswordInput,
   RegisterInput
 } from "@crypto/shared";
 
@@ -11,7 +14,14 @@ import type { AppEnv } from "../../config/env.js";
 import { AppError } from "../../lib/app-error.js";
 import { getAuthUser, requireAccessToken } from "./auth.guard.js";
 import { clearRefreshTokenCookie, setRefreshTokenCookie } from "./auth.tokens.js";
-import { loginUser, logoutUser, refreshSession, registerUser } from "./auth.service.js";
+import {
+  forgotPassword,
+  loginUser,
+  logoutUser,
+  refreshSession,
+  registerUser,
+  resetPassword
+} from "./auth.service.js";
 
 function responseObjectSchema(required: string[], properties: Record<string, unknown>) {
   return {
@@ -95,6 +105,34 @@ const authRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
       await logoutUser(authUser.sub);
       clearRefreshTokenCookie(reply, env);
       return reply.send({ message: "Logout realizado com sucesso" });
+    }
+  );
+
+  app.post<{ Body: ForgotPasswordInput; Reply: AuthMessageResponse }>(
+    "/auth/forgot-password",
+    {
+      schema: {
+        tags: ["Auth"],
+        summary: "Solicitar redefinicao de senha"
+      }
+    },
+    async (request, reply) => {
+      const payload = await forgotPassword(env, request.body);
+      return reply.send(payload);
+    }
+  );
+
+  app.post<{ Body: ResetPasswordInput; Reply: AuthMessageResponse }>(
+    "/auth/reset-password",
+    {
+      schema: {
+        tags: ["Auth"],
+        summary: "Redefinir senha com token"
+      }
+    },
+    async (request, reply) => {
+      const payload = await resetPassword(request.body);
+      return reply.send(payload);
     }
   );
 };

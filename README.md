@@ -34,7 +34,7 @@ Aplicacao fullstack para visualizacao de criptomoedas e gerenciamento de perfil 
 
 - **Auth:** Login, registro, forgot/reset password, JWT com refresh token em HttpOnly cookie (rotacao automatica)
 - **Perfil:** Visualizar e editar nome, email, descricao, avatar e moeda preferida (S3-compatible storage)
-- **Criptomoedas:** Lista com busca (debounce 300ms), filtro por tipo (coin/token), detalhes em modal
+- **Criptomoedas:** Lista com busca, filtro por tipo (coin/token), paginação e detalhes em tela
 - **Favoritos:** Marcar/desmarcar criptomoedas, lista dedicada de favoritos
 - **i18n:** Espanhol (default), ingles e portugues
 - **Seguranca:** Helmet, rate limiting, proxy same-origin, refresh token rotation
@@ -75,6 +75,8 @@ Edite o `.env` conforme necessario:
 # API
 NODE_ENV=development
 PORT=3000
+WEB_ORIGIN=http://localhost:5173
+WEB_APP_URL=http://localhost:5173
 MONGODB_URI=mongodb://localhost:27017/erictel
 JWT_SECRET=troque-por-uma-chave-segura
 JWT_ACCESS_EXPIRATION=15m
@@ -83,17 +85,23 @@ COINPAPRIKA_BASE_URL=https://api.coinpaprika.com/v1
 
 # S3 Storage (MinIO local / Cloudflare R2 prod)
 S3_ENDPOINT=http://localhost:9000
-S3_REGION=auto
+S3_PUBLIC_ENDPOINT=http://localhost:9000
+S3_REGION=us-east-1
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
 S3_BUCKET=avatars
+AVATAR_MAX_BYTES=2097152
 
 # Email (Resend — https://resend.com, free tier 100 emails/dia)
 RESEND_API_KEY=re_YOUR_API_KEY_HERE
 RESEND_FROM=noreply@yourdomain.com
 
+# Security
+RATE_LIMIT_MAX=100
+RATE_LIMIT_TIME_WINDOW=1 minute
+
 # Web
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=/api
 ```
 
 ### 3. Rodar em desenvolvimento
@@ -120,7 +128,7 @@ docker-compose up --build
 
 Sobe 4 servicos:
 - **api** (porta 3000)
-- **web** (porta 80)
+- **web** (porta 8080)
 - **mongo** (porta 27017)
 - **minio** (porta 9000 API, 9001 console)
 

@@ -1,15 +1,19 @@
 import type { FastifyPluginAsync } from "fastify";
 
 import type {
+  AvatarUpdateResponse,
   FavoriteListResponse,
   FavoritesResponse,
+  UpdateUserProfileInput,
   UserProfile
 } from "@crypto/shared";
+import { updateUserProfileInputSchema } from "@crypto/shared";
 
 import type { AppEnv } from "../../config/env.js";
 import { AppError } from "../../lib/app-error.js";
 import { getAuthUser, requireAccessToken } from "../auth/auth.guard.js";
 import { getCoinPaprikaService } from "../crypto/crypto.service.js";
+import { getStorageService } from "../../services/storage.service.js";
 import { toUserProfile, userRepository } from "./user.repository.js";
 
 const MAX_FAVORITES = 50;
@@ -20,6 +24,7 @@ function normalizeCoinId(coinId: string): string {
 
 const userRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => {
   const cryptoService = getCoinPaprikaService(options.env.COINPAPRIKA_BASE_URL);
+  const storageService = getStorageService(options.env);
 
   app.get<{ Reply: UserProfile }>(
     "/users/me",
@@ -38,6 +43,103 @@ const userRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
       }
 
       return reply.send(toUserProfile(user));
+    }
+  );
+
+  app.put<{ Body: UpdateUserProfileInput; Reply: UserProfile }>(
+    "/users/me",
+    {
+      preHandler: requireAccessToken,
+      schema: {
+        tags: ["Users"],
+        summary: "Atualizar perfil do usuario autenticado"
+      }
+    },
+    async (request, reply) => {
+      const authUser = getAuthUser(request);
+      const payload = updateUserProfileInputSchema.parse(request.body);
+
+      if (payload.email) {
+        const existingUser = await userRepository.findByEmail(payload.email);
+        if (existingUser && existingUser._id.toString() !== authUser.sub) {
+          throw new AppError("Email ja cadastrado", 409);
+        }
+      }
+
+      const updatedUser = await userRepository.updateProfile(authUser.sub, payload);
+      if (!updatedUser) {
+        throw new AppError("Usuario nao encontrado", 404);
+      }
+
+      return reply.send(toUserProfile(updatedUser));
+    }
+  );
+
+  app.put<{ Reply: AvatarUpdateResponse }>(
+    "/users/me/avatar",
+    {
+      preHandler: requireAccessToken,
+      schema: {
+        tags: ["Users"],
+        summary: "Fazer upload de avatar"
+      }
+    },
+    async (request, reply) => {
+      const authUser = getAuthUser(request);
+
+      if (!request.isMultipart()) {
+        throw new AppError("Requisicao deve ser multipart/form-data", 400);
+      }
+
+      const part = await request.file();
+
+      if (!part) {
+        throw new AppError("Arquivo de avatar nao enviado", 400);
+      }
+
+      if (!part.mimetype.startsWith("image/")) {
+        throw new AppError("Apenas arquivos de imagem sao permitidos", 400);
+      }
+
+      const avatarBytes = await part.toBuffer();
+      if (avatarBytes.length === 0) {
+        throw new AppError("Arquivo de avatar vazio", 400);
+      }
+
+      const avatarKey = await storageService.uploadAvatar(authUser.sub, avatarBytes, part.mimetype);
+      const updatedUser = await userRepository.setAvatarKey(authUser.sub, avatarKey);
+      if (!updatedUser) {
+        throw new AppError("Usuario nao encontrado", 404);
+      }
+
+      return reply.send({
+        message: "Avatar atualizado com sucesso"
+      });
+    }
+  );
+
+  app.get(
+    "/users/me/avatar",
+    {
+      preHandler: requireAccessToken,
+      schema: {
+        tags: ["Users"],
+        summary: "Obter avatar do usuario via URL assinada"
+      }
+    },
+    async (request, reply) => {
+      const authUser = getAuthUser(request);
+      const user = await userRepository.findById(authUser.sub);
+      if (!user) {
+        throw new AppError("Usuario nao encontrado", 404);
+      }
+
+      if (!user.avatarKey) {
+        throw new AppError("Usuario sem avatar", 404);
+      }
+
+      const avatarSignedUrl = await storageService.getAvatarSignedUrl(user.avatarKey);
+      return reply.redirect(avatarSignedUrl);
     }
   );
 
