@@ -30,6 +30,8 @@ Projeto em formato monorepo com `pnpm workspaces` para separar responsabilidades
 - Contratos centralizados em `packages/shared/src/schemas` com Zod.
 - Execucao local containerizada via Dockerfiles e `docker-compose.yml`.
 - Testes de integracao da API com `node:test` + `tsx` + `mongodb-memory-server`, exercitando rotas via `fastify.inject`.
+- Testes do frontend com `Vitest` focando o `auth-client` e fluxo de sessao/refresh.
+- Pipeline de CI em `.github/workflows/ci.yml` com gates de lint, typecheck, build e testes.
 
 ## Estado Atual
 - `apps/api`:
@@ -60,3 +62,4 @@ Projeto em formato monorepo com `pnpm workspaces` para separar responsabilidades
 - Typecheck: `pnpm typecheck`
 - Build: `pnpm build`
 - Teste API: `pnpm --filter api test`
+- Teste Web: `pnpm --filter web test`

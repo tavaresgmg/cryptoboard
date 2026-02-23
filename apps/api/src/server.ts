@@ -13,7 +13,7 @@ import { registerSwagger } from "./plugins/swagger.js";
 
 export async function buildServer(env: AppEnv) {
   const app = Fastify({
-    logger: true
+    logger: env.NODE_ENV !== "test"
   });
 
   await registerCors(app, env);

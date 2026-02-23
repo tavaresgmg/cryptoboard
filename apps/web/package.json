@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "lint": "eslint \"src/**/*.ts\" \"vite.config.ts\"",
+    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" \"vite.config.ts\"",
     "typecheck": "vue-tsc --noEmit",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "echo \"No tests yet for web\""
+    "test": "vitest run"
   },
   "dependencies": {
     "@crypto/shared": "workspace:*",
@@ -20,6 +20,7 @@
     "@vitejs/plugin-vue": "^6.0.1",
     "typescript": "^5.9.2",
     "vite": "^7.1.9",
+    "vitest": "^4.0.18",
     "vue-tsc": "^3.1.1"
   }
 }

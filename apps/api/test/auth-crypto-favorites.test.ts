@@ -19,6 +19,10 @@ interface RegisterResponse {
   };
 }
 
+interface AccessTokenResponse {
+  accessToken: string;
+}
+
 interface CryptoListResponse {
   data: Array<{
     id: string;
@@ -176,6 +180,21 @@ function authHeaders(accessToken: string): { authorization: string } {
   return {
     authorization: `Bearer ${accessToken}`
   };
+}
+
+function extractRefreshCookie(response: Awaited<ReturnType<FastifyInstance["inject"]>>): string {
+  const setCookieHeader = response.headers["set-cookie"];
+  if (!setCookieHeader) {
+    throw new Error("Header set-cookie ausente na resposta");
+  }
+
+  const cookieValue = Array.isArray(setCookieHeader) ? setCookieHeader[0] : setCookieHeader;
+  const refreshCookie = cookieValue.split(";")[0];
+  if (!refreshCookie.startsWith("refreshToken=")) {
+    throw new Error("Cookie refreshToken ausente");
+  }
+
+  return refreshCookie;
 }
 
 function extractPathForService(url: string, serviceBaseUrl: string): string {
@@ -359,5 +378,70 @@ describe("Auth + Crypto + Favorites integration", () => {
       headers: authHeaders(authPayload.accessToken)
     });
     assert.equal(addFavoriteResponse.statusCode, 404);
+  });
+
+  test("deve renovar sessao com refresh token e invalidar ao fazer logout", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Refresh Flow",
+        email: `user-${randomUUID()}@example.com`,
+        password: "12345678"
+      }
+    });
+
+    assert.equal(registerResponse.statusCode, 201);
+    const authPayload = parseJson<RegisterResponse>(registerResponse.body);
+    const refreshCookie = extractRefreshCookie(registerResponse);
+
+    const refreshResponse = await app.inject({
+      method: "POST",
+      url: "/auth/refresh",
+      headers: {
+        cookie: refreshCookie
+      }
+    });
+    assert.equal(refreshResponse.statusCode, 200);
+
+    const refreshedPayload = parseJson<AccessTokenResponse>(refreshResponse.body);
+    assert.ok(refreshedPayload.accessToken.length > 0);
+
+    const profileResponse = await app.inject({
+      method: "GET",
+      url: "/users/me",
+      headers: authHeaders(refreshedPayload.accessToken)
+    });
+    assert.equal(profileResponse.statusCode, 200);
+
+    const logoutResponse = await app.inject({
+      method: "DELETE",
+      url: "/auth/logout",
+      headers: authHeaders(authPayload.accessToken)
+    });
+    assert.equal(logoutResponse.statusCode, 200);
+
+    const refreshAfterLogoutResponse = await app.inject({
+      method: "POST",
+      url: "/auth/refresh",
+      headers: {
+        cookie: refreshCookie
+      }
+    });
+    assert.equal(refreshAfterLogoutResponse.statusCode, 401);
+  });
+
+  test("deve bloquear rotas protegidas sem access token", async () => {
+    const profileResponse = await app.inject({
+      method: "GET",
+      url: "/users/me"
+    });
+    assert.equal(profileResponse.statusCode, 401);
+
+    const cryptoResponse = await app.inject({
+      method: "GET",
+      url: "/crypto"
+    });
+    assert.equal(cryptoResponse.statusCode, 401);
   });
 });
