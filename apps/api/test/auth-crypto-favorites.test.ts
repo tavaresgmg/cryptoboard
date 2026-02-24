@@ -31,6 +31,7 @@ interface CryptoListResponse {
     name: string;
     symbol: string;
     type: "coin" | "token";
+    price?: number;
   }>;
   pagination: {
     page: number;
@@ -42,6 +43,7 @@ interface CryptoListResponse {
 interface CryptoDetailResponse {
   id: string;
   symbol: string;
+  price?: number;
 }
 
 interface FavoritesResponse {
@@ -51,6 +53,7 @@ interface FavoritesResponse {
 interface FavoriteListResponse {
   data: Array<{
     id: string;
+    price?: number;
   }>;
 }
 
@@ -65,16 +68,16 @@ interface CoinPaprikaCoin {
 interface CoinPaprikaTicker {
   id: string;
   rank: number;
-  quotes: {
-    USD: {
-      price: number;
-      market_cap: number;
-      volume_24h: number;
-      percent_change_1h: number;
-      percent_change_24h: number;
-      percent_change_7d: number;
-    };
-  };
+  quotes: Record<string, CoinPaprikaQuote>;
+}
+
+interface CoinPaprikaQuote {
+  price: number;
+  market_cap: number;
+  volume_24h: number;
+  percent_change_1h: number;
+  percent_change_24h: number;
+  percent_change_7d: number;
 }
 
 const coinCatalog: CoinPaprikaCoin[] = [
@@ -113,6 +116,14 @@ const tickerCatalog: CoinPaprikaTicker[] = [
         percent_change_1h: -0.4,
         percent_change_24h: -1.8,
         percent_change_7d: 2.1
+      },
+      BRL: {
+        price: 325000,
+        market_cap: 6000000000000,
+        volume_24h: 150000000000,
+        percent_change_1h: -0.4,
+        percent_change_24h: -1.8,
+        percent_change_7d: 2.1
       }
     }
   },
@@ -127,6 +138,14 @@ const tickerCatalog: CoinPaprikaTicker[] = [
         percent_change_1h: 0.1,
         percent_change_24h: -0.6,
         percent_change_7d: 1.7
+      },
+      BRL: {
+        price: 16000,
+        market_cap: 1950000000000,
+        volume_24h: 85000000000,
+        percent_change_1h: 0.1,
+        percent_change_24h: -0.6,
+        percent_change_7d: 1.7
       }
     }
   },
@@ -138,6 +157,14 @@ const tickerCatalog: CoinPaprikaTicker[] = [
         price: 1,
         market_cap: 90000000000,
         volume_24h: 70000000000,
+        percent_change_1h: 0,
+        percent_change_24h: 0,
+        percent_change_7d: 0
+      },
+      BRL: {
+        price: 5,
+        market_cap: 450000000000,
+        volume_24h: 350000000000,
         percent_change_1h: 0,
         percent_change_24h: 0,
         percent_change_7d: 0
@@ -199,7 +226,10 @@ function extractRefreshCookie(response: Awaited<ReturnType<FastifyInstance["inje
   return refreshCookie;
 }
 
-function extractPathForService(url: string, serviceBaseUrl: string): string {
+function extractRequestForService(
+  url: string,
+  serviceBaseUrl: string
+): { path: string; searchParams: URLSearchParams } {
   if (!url.startsWith(serviceBaseUrl)) {
     throw new Error(`Unexpected URL in fetch stub: ${url}`);
   }
@@ -207,21 +237,44 @@ function extractPathForService(url: string, serviceBaseUrl: string): string {
   const fullUrl = new URL(url);
   const basePath = new URL(serviceBaseUrl).pathname.replace(/\/$/, "");
   const normalizedPath = fullUrl.pathname.replace(basePath, "");
-  return normalizedPath.length > 0 ? normalizedPath : "/";
+  const path = normalizedPath.length > 0 ? normalizedPath : "/";
+  return { path, searchParams: fullUrl.searchParams };
+}
+
+function selectQuoteCurrency(searchParams: URLSearchParams): string {
+  return searchParams.get("quotes") ?? "USD";
+}
+
+function withSelectedQuote(ticker: CoinPaprikaTicker, currency: string): CoinPaprikaTicker {
+  const quote = ticker.quotes[currency] ?? ticker.quotes.USD;
+  if (!quote) {
+    return {
+      ...ticker,
+      quotes: {}
+    };
+  }
+
+  return {
+    ...ticker,
+    quotes: {
+      [currency]: quote
+    }
+  };
 }
 
 function createCoinPaprikaFetchStub(serviceBaseUrl: string): typeof globalThis.fetch {
   return async (input) => {
     const url =
       typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-    const path = extractPathForService(url, serviceBaseUrl);
+    const { path, searchParams } = extractRequestForService(url, serviceBaseUrl);
 
     if (path === "/coins") {
       return toJsonResponse(coinCatalog);
     }
 
     if (path === "/tickers") {
-      return toJsonResponse(tickerCatalog);
+      const currency = selectQuoteCurrency(searchParams);
+      return toJsonResponse(tickerCatalog.map((ticker) => withSelectedQuote(ticker, currency)));
     }
 
     if (path.startsWith("/coins/")) {
@@ -233,7 +286,12 @@ function createCoinPaprikaFetchStub(serviceBaseUrl: string): typeof globalThis.f
     if (path.startsWith("/tickers/")) {
       const coinId = path.slice("/tickers/".length);
       const ticker = tickerById.get(coinId);
-      return ticker ? toJsonResponse(ticker) : toJsonResponse({ error: "not-found" }, 404);
+      if (!ticker) {
+        return toJsonResponse({ error: "not-found" }, 404);
+      }
+
+      const currency = selectQuoteCurrency(searchParams);
+      return toJsonResponse(withSelectedQuote(ticker, currency));
     }
 
     throw new Error(`Unexpected path in fetch stub: ${path}`);
@@ -607,6 +665,67 @@ describe("Auth + Crypto + Favorites integration", () => {
     assert.equal(mePayload.description, "Test description");
     assert.equal(mePayload.preferredCurrency, "BRL");
     assert.equal(mePayload.hasAvatar, false);
+  });
+
+  test("should respect preferred currency in crypto list, details and favorites", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User BRL Currency",
+        email: `user-${randomUUID()}@example.com`,
+        password: "12345678"
+      }
+    });
+    assert.equal(registerResponse.statusCode, 201);
+    const authPayload = parseJson<RegisterResponse>(registerResponse.body);
+
+    const updateResponse = await app.inject({
+      method: "PUT",
+      url: "/users/me",
+      headers: authHeaders(authPayload.accessToken),
+      payload: {
+        preferredCurrency: "BRL"
+      }
+    });
+    assert.equal(updateResponse.statusCode, 200);
+
+    const addFavoriteResponse = await app.inject({
+      method: "POST",
+      url: "/users/me/favorites/btc-bitcoin",
+      headers: authHeaders(authPayload.accessToken)
+    });
+    assert.equal(addFavoriteResponse.statusCode, 201);
+
+    const listResponse = await app.inject({
+      method: "GET",
+      url: "/crypto?search=bitcoin&page=1&limit=5",
+      headers: authHeaders(authPayload.accessToken)
+    });
+    assert.equal(listResponse.statusCode, 200);
+    const listPayload = parseJson<CryptoListResponse>(listResponse.body);
+    assert.equal(listPayload.data[0]?.id, "btc-bitcoin");
+    assert.equal(listPayload.data[0]?.price, 325000);
+
+    const detailResponse = await app.inject({
+      method: "GET",
+      url: "/crypto/btc-bitcoin",
+      headers: authHeaders(authPayload.accessToken)
+    });
+    assert.equal(detailResponse.statusCode, 200);
+    const detailPayload = parseJson<CryptoDetailResponse>(detailResponse.body);
+    assert.equal(detailPayload.id, "btc-bitcoin");
+    assert.equal(detailPayload.price, 325000);
+
+    const favoritesResponse = await app.inject({
+      method: "GET",
+      url: "/users/me/favorites",
+      headers: authHeaders(authPayload.accessToken)
+    });
+    assert.equal(favoritesResponse.statusCode, 200);
+    const favoritesPayload = parseJson<FavoriteListResponse>(favoritesResponse.body);
+    assert.equal(favoritesPayload.data[0]?.id, "btc-bitcoin");
+    assert.equal(favoritesPayload.data[0]?.price, 325000);
   });
 
   test("should complete forgot/reset password flow and reject old password", async () => {

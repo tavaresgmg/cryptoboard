@@ -1,25 +1,38 @@
 <script setup lang="ts">
-import type { CryptoListItem } from "@crypto/shared";
+import type { CryptoListItem, SupportedCurrency } from "@crypto/shared";
+import { toRefs } from "vue";
 import { useI18n } from "vue-i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import FavoriteButton from "@/components/FavoriteButton.vue";
 
-defineProps<{
-  crypto: CryptoListItem;
-  isFavorite: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    crypto: CryptoListItem;
+    isFavorite: boolean;
+    currency?: SupportedCurrency;
+  }>(),
+  {
+    currency: "USD"
+  }
+);
+const { crypto, isFavorite } = toRefs(props);
 
 const emit = defineEmits<{
   select: [id: string];
   toggleFavorite: [id: string];
 }>();
 
-const { t } = useI18n();
+const { locale } = useI18n();
 
 function formatPrice(price?: number) {
   if (price === undefined) return "—";
-  return `$ ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return new Intl.NumberFormat(locale.value, {
+    style: "currency",
+    currency: props.currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(price);
 }
 
 function formatChange(value?: number) {

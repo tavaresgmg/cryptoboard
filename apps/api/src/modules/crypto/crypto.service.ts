@@ -3,7 +3,8 @@ import type {
   CryptoListItem,
   CryptoListResponse,
   ListCryptoSort,
-  ListCryptoQuery
+  ListCryptoQuery,
+  SupportedCurrency
 } from "@crypto/shared";
 import { listCryptoQuerySchema } from "@crypto/shared";
 
@@ -20,16 +21,16 @@ interface CoinPaprikaCoin {
 interface CoinPaprikaTicker {
   id: string;
   rank: number;
-  quotes?: {
-    USD?: {
-      price?: number;
-      market_cap?: number;
-      volume_24h?: number;
-      percent_change_1h?: number;
-      percent_change_24h?: number;
-      percent_change_7d?: number;
-    };
-  };
+  quotes?: Record<string, CoinPaprikaQuote | undefined>;
+}
+
+interface CoinPaprikaQuote {
+  price?: number;
+  market_cap?: number;
+  volume_24h?: number;
+  percent_change_1h?: number;
+  percent_change_24h?: number;
+  percent_change_7d?: number;
 }
 
 interface CoinPaprikaCoinDetails {
@@ -71,6 +72,7 @@ const COINS_TTL_MS = 5 * 60 * 1000;
 const TICKERS_TTL_MS = 2 * 60 * 1000;
 const NEGATIVE_CACHE_TTL_MS = 10 * 1000;
 const DETAIL_TTL_MS = 60 * 1000;
+const DEFAULT_CURRENCY: SupportedCurrency = "USD";
 
 function createLogoUrl(coinId: string): string {
   return `https://static.coinpaprika.com/coin/${coinId}/logo.png`;
@@ -103,16 +105,26 @@ function compareNullableNumber(
   return direction === "asc" ? a - b : b - a;
 }
 
+function buildQuotesQuery(currency: SupportedCurrency): string {
+  return `?quotes=${encodeURIComponent(currency)}`;
+}
+
 class CoinPaprikaService {
   private readonly baseUrl: string;
   private coinsCache: CacheEntry<CoinPaprikaCoin[]> | null = null;
-  private tickersCache: CacheEntry<Map<string, CoinPaprikaTicker>> | null = null;
   private coinsFlight: Promise<CoinPaprikaCoin[]> | null = null;
-  private tickersFlight: Promise<Map<string, CoinPaprikaTicker>> | null = null;
+  private tickersCacheByCurrency = new Map<
+    SupportedCurrency,
+    CacheEntry<Map<string, CoinPaprikaTicker>>
+  >();
+  private tickersFlightByCurrency = new Map<
+    SupportedCurrency,
+    Promise<Map<string, CoinPaprikaTicker>>
+  >();
   private coinsNegativeUntil = 0;
-  private tickersNegativeUntil = 0;
+  private tickersNegativeUntilByCurrency = new Map<SupportedCurrency, number>();
   private detailCache = new Map<string, CacheEntry<CryptoDetail>>();
-  private listSnapshot: ListSnapshot | null = null;
+  private listSnapshotsByCurrency = new Map<SupportedCurrency, ListSnapshot>();
   private coinByIdSnapshot: CoinByIdSnapshot | null = null;
 
   constructor(baseUrl: string) {
@@ -130,6 +142,21 @@ class CoinPaprikaService {
     }
 
     return (await response.json()) as T;
+  }
+
+  private getTickerQuote(
+    ticker: CoinPaprikaTicker | undefined,
+    currency: SupportedCurrency
+  ): CoinPaprikaQuote | undefined {
+    if (!ticker?.quotes) {
+      return undefined;
+    }
+
+    return ticker.quotes[currency] ?? ticker.quotes[DEFAULT_CURRENCY];
+  }
+
+  private getDetailCacheKey(coinId: string, currency: SupportedCurrency): string {
+    return `${coinId}|${currency}`;
   }
 
   private refreshCoins(): Promise<CoinPaprikaCoin[]> {
@@ -173,61 +200,68 @@ class CoinPaprikaService {
     return this.refreshCoins();
   }
 
-  private refreshTickersMap(): Promise<Map<string, CoinPaprikaTicker>> {
-    this.tickersFlight = this.fetchJson<CoinPaprikaTicker[]>("/tickers")
+  private refreshTickersMap(currency: SupportedCurrency): Promise<Map<string, CoinPaprikaTicker>> {
+    const flight = this.fetchJson<CoinPaprikaTicker[]>(`/tickers${buildQuotesQuery(currency)}`)
       .then((tickers) => {
         const map = new Map<string, CoinPaprikaTicker>();
         for (const ticker of tickers) {
           map.set(ticker.id, ticker);
         }
-        this.tickersCache = { value: map, expiresAt: Date.now() + TICKERS_TTL_MS };
+        this.tickersCacheByCurrency.set(currency, {
+          value: map,
+          expiresAt: Date.now() + TICKERS_TTL_MS
+        });
         return map;
       })
       .catch((error) => {
-        this.tickersNegativeUntil = Date.now() + NEGATIVE_CACHE_TTL_MS;
+        this.tickersNegativeUntilByCurrency.set(currency, Date.now() + NEGATIVE_CACHE_TTL_MS);
         throw error;
       })
       .finally(() => {
-        this.tickersFlight = null;
+        this.tickersFlightByCurrency.delete(currency);
       });
 
-    return this.tickersFlight;
+    this.tickersFlightByCurrency.set(currency, flight);
+    return flight;
   }
 
-  private async getTickersMap(): Promise<Map<string, CoinPaprikaTicker>> {
+  private async getTickersMap(
+    currency: SupportedCurrency
+  ): Promise<Map<string, CoinPaprikaTicker>> {
     const now = Date.now();
-    if (this.tickersCache && this.tickersCache.expiresAt > now) {
-      return this.tickersCache.value;
+    const cached = this.tickersCacheByCurrency.get(currency);
+    if (cached && cached.expiresAt > now) {
+      return cached.value;
     }
 
-    if (this.tickersCache) {
-      if (!this.tickersFlight && this.tickersNegativeUntil <= now) {
-        void this.refreshTickersMap();
+    const inFlight = this.tickersFlightByCurrency.get(currency);
+
+    if (cached) {
+      if (!inFlight && (this.tickersNegativeUntilByCurrency.get(currency) ?? 0) <= now) {
+        void this.refreshTickersMap(currency);
       }
-      return this.tickersCache.value;
+      return cached.value;
     }
 
-    if (this.tickersNegativeUntil > now) {
+    if ((this.tickersNegativeUntilByCurrency.get(currency) ?? 0) > now) {
       throw new AppError("CoinPaprika request failed (back-off)", 502);
     }
 
-    if (this.tickersFlight) {
-      return this.tickersFlight;
+    if (inFlight) {
+      return inFlight;
     }
 
-    return this.refreshTickersMap();
+    return this.refreshTickersMap(currency);
   }
 
   private getListSnapshot(
     coins: CoinPaprikaCoin[],
-    tickersMap: Map<string, CoinPaprikaTicker>
+    tickersMap: Map<string, CoinPaprikaTicker>,
+    currency: SupportedCurrency
   ): ListSnapshot {
-    if (
-      this.listSnapshot &&
-      this.listSnapshot.coinsRef === coins &&
-      this.listSnapshot.tickersRef === tickersMap
-    ) {
-      return this.listSnapshot;
+    const snapshot = this.listSnapshotsByCurrency.get(currency);
+    if (snapshot && snapshot.coinsRef === coins && snapshot.tickersRef === tickersMap) {
+      return snapshot;
     }
 
     const records = coins.map((coin) => ({
@@ -237,24 +271,29 @@ class CoinPaprikaService {
       symbolLower: coin.symbol.toLowerCase()
     }));
 
-    this.listSnapshot = {
+    const nextSnapshot: ListSnapshot = {
       coinsRef: coins,
       tickersRef: tickersMap,
       records,
       sortedBy: new Map<ListCryptoSort, CoinListRecord[]>()
     };
 
-    return this.listSnapshot;
+    this.listSnapshotsByCurrency.set(currency, nextSnapshot);
+    return nextSnapshot;
   }
 
-  private getSortedRecords(snapshot: ListSnapshot, sort: ListCryptoSort): CoinListRecord[] {
+  private getSortedRecords(
+    snapshot: ListSnapshot,
+    sort: ListCryptoSort,
+    currency: SupportedCurrency
+  ): CoinListRecord[] {
     const cached = snapshot.sortedBy.get(sort);
     if (cached) {
       return cached;
     }
 
     const sorted = [...snapshot.records].sort((left, right) =>
-      this.compareRecords(left, right, sort)
+      this.compareRecords(left, right, sort, currency)
     );
     snapshot.sortedBy.set(sort, sorted);
     return sorted;
@@ -275,16 +314,19 @@ class CoinPaprikaService {
 
   private mapCoinToListItem(
     coin: CoinPaprikaCoin,
-    ticker: CoinPaprikaTicker | undefined
+    ticker: CoinPaprikaTicker | undefined,
+    currency: SupportedCurrency
   ): CryptoListItem {
+    const quote = this.getTickerQuote(ticker, currency);
+
     return {
       id: coin.id,
       name: coin.name,
       symbol: coin.symbol,
       rank: Number.isFinite(coin.rank) ? coin.rank : null,
       type: coin.type,
-      price: ticker?.quotes?.USD?.price,
-      percentChange24h: ticker?.quotes?.USD?.percent_change_24h,
+      price: quote?.price,
+      percentChange24h: quote?.percent_change_24h,
       logoUrl: createLogoUrl(coin.id)
     };
   }
@@ -292,12 +334,13 @@ class CoinPaprikaService {
   private compareRecords(
     left: CoinListRecord,
     right: CoinListRecord,
-    sort: ListCryptoSort
+    sort: ListCryptoSort,
+    currency: SupportedCurrency
   ): number {
     const leftCoin = left.coin;
     const rightCoin = right.coin;
-    const leftTicker = left.ticker;
-    const rightTicker = right.ticker;
+    const leftQuote = this.getTickerQuote(left.ticker, currency);
+    const rightQuote = this.getTickerQuote(right.ticker, currency);
 
     const byRank = compareNullableNumber(leftCoin.rank, rightCoin.rank, "asc");
     const byNameAsc =
@@ -305,33 +348,25 @@ class CoinPaprikaService {
 
     switch (sort) {
       case "price_desc": {
-        const byPrice = compareNullableNumber(
-          leftTicker?.quotes?.USD?.price,
-          rightTicker?.quotes?.USD?.price,
-          "desc"
-        );
+        const byPrice = compareNullableNumber(leftQuote?.price, rightQuote?.price, "desc");
         return byPrice || byRank || byNameAsc;
       }
       case "price_asc": {
-        const byPrice = compareNullableNumber(
-          leftTicker?.quotes?.USD?.price,
-          rightTicker?.quotes?.USD?.price,
-          "asc"
-        );
+        const byPrice = compareNullableNumber(leftQuote?.price, rightQuote?.price, "asc");
         return byPrice || byRank || byNameAsc;
       }
       case "change24_desc": {
         const byChange = compareNullableNumber(
-          leftTicker?.quotes?.USD?.percent_change_24h,
-          rightTicker?.quotes?.USD?.percent_change_24h,
+          leftQuote?.percent_change_24h,
+          rightQuote?.percent_change_24h,
           "desc"
         );
         return byChange || byRank || byNameAsc;
       }
       case "change24_asc": {
         const byChange = compareNullableNumber(
-          leftTicker?.quotes?.USD?.percent_change_24h,
-          rightTicker?.quotes?.USD?.percent_change_24h,
+          leftQuote?.percent_change_24h,
+          rightQuote?.percent_change_24h,
           "asc"
         );
         return byChange || byRank || byNameAsc;
@@ -346,17 +381,20 @@ class CoinPaprikaService {
     }
   }
 
-  async warmup(): Promise<void> {
-    const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap()]);
-    const snapshot = this.getListSnapshot(coins, tickersMap);
-    this.getSortedRecords(snapshot, "price_desc");
+  async warmup(currency: SupportedCurrency = DEFAULT_CURRENCY): Promise<void> {
+    const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap(currency)]);
+    const snapshot = this.getListSnapshot(coins, tickersMap, currency);
+    this.getSortedRecords(snapshot, "price_desc", currency);
   }
 
-  async list(queryInput: unknown): Promise<CryptoListResponse> {
+  async list(
+    queryInput: unknown,
+    currency: SupportedCurrency = DEFAULT_CURRENCY
+  ): Promise<CryptoListResponse> {
     const query: ListCryptoQuery = listCryptoQuerySchema.parse(queryInput);
-    const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap()]);
-    const snapshot = this.getListSnapshot(coins, tickersMap);
-    const sortedRecords = this.getSortedRecords(snapshot, query.sort);
+    const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap(currency)]);
+    const snapshot = this.getListSnapshot(coins, tickersMap, currency);
+    const sortedRecords = this.getSortedRecords(snapshot, query.sort, currency);
     const searchLower = query.search?.toLowerCase();
     const filteredRecords = sortedRecords.filter((record) => {
       if (query.type && record.coin.type !== query.type) {
@@ -375,7 +413,7 @@ class CoinPaprikaService {
     const pageItems = filteredRecords.slice(offset, offset + query.limit);
 
     return {
-      data: pageItems.map((record) => this.mapCoinToListItem(record.coin, record.ticker)),
+      data: pageItems.map((record) => this.mapCoinToListItem(record.coin, record.ticker, currency)),
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -384,18 +422,23 @@ class CoinPaprikaService {
     };
   }
 
-  async getById(coinId: string): Promise<CryptoDetail> {
+  async getById(
+    coinId: string,
+    currency: SupportedCurrency = DEFAULT_CURRENCY
+  ): Promise<CryptoDetail> {
     const now = Date.now();
-    const cached = this.detailCache.get(coinId);
+    const cacheKey = this.getDetailCacheKey(coinId, currency);
+    const cached = this.detailCache.get(cacheKey);
     if (cached && cached.expiresAt > now) {
       return cached.value;
     }
 
     const [coin, ticker] = await Promise.all([
       this.fetchJson<CoinPaprikaCoinDetails>(`/coins/${coinId}`),
-      this.fetchJson<CoinPaprikaTicker>(`/tickers/${coinId}`)
+      this.fetchJson<CoinPaprikaTicker>(`/tickers/${coinId}${buildQuotesQuery(currency)}`)
     ]);
 
+    const quote = this.getTickerQuote(ticker, currency);
     const detail: CryptoDetail = {
       id: coin.id,
       name: coin.name,
@@ -403,27 +446,30 @@ class CoinPaprikaService {
       rank: Number.isFinite(coin.rank) ? coin.rank : null,
       type: coin.type,
       description: coin.description,
-      price: ticker?.quotes?.USD?.price,
-      percentChange1h: ticker?.quotes?.USD?.percent_change_1h,
-      percentChange24h: ticker?.quotes?.USD?.percent_change_24h,
-      percentChange7d: ticker?.quotes?.USD?.percent_change_7d,
-      marketCap: ticker?.quotes?.USD?.market_cap,
-      volume24h: ticker?.quotes?.USD?.volume_24h,
+      price: quote?.price,
+      percentChange1h: quote?.percent_change_1h,
+      percentChange24h: quote?.percent_change_24h,
+      percentChange7d: quote?.percent_change_7d,
+      marketCap: quote?.market_cap,
+      volume24h: quote?.volume_24h,
       circulatingSupply: coin.circulating_supply,
       maxSupply: coin.max_supply ?? undefined,
       logoUrl: createLogoUrl(coin.id)
     };
 
-    this.detailCache.set(coinId, { value: detail, expiresAt: Date.now() + DETAIL_TTL_MS });
+    this.detailCache.set(cacheKey, { value: detail, expiresAt: Date.now() + DETAIL_TTL_MS });
     return detail;
   }
 
-  async getByIds(ids: string[]): Promise<CryptoListItem[]> {
+  async getByIds(
+    ids: string[],
+    currency: SupportedCurrency = DEFAULT_CURRENCY
+  ): Promise<CryptoListItem[]> {
     if (ids.length === 0) {
       return [];
     }
 
-    const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap()]);
+    const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap(currency)]);
     const coinById = this.getCoinByIdMap(coins);
 
     return ids
@@ -433,7 +479,7 @@ class CoinPaprikaService {
           return null;
         }
 
-        return this.mapCoinToListItem(coin, tickersMap.get(id));
+        return this.mapCoinToListItem(coin, tickersMap.get(id), currency);
       })
       .filter((item): item is CryptoListItem => item !== null);
   }

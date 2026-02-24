@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { toast } from "vue-sonner";
 import type { CryptoDetail, CryptoListItem } from "@crypto/shared";
@@ -13,13 +13,14 @@ import { useUser } from "@/composables/useUser";
 import { getCryptoDetail, listFavorites, removeFavorite } from "@/services/auth-client";
 
 const { t } = useI18n();
-const { updateFavorites } = useUser();
+const { user, updateFavorites } = useUser();
 
 const favorites = ref<CryptoListItem[]>([]);
 const selectedCrypto = ref<CryptoDetail | null>(null);
 const dialogOpen = ref(false);
 const loading = ref(false);
 const loadingDetail = ref(false);
+const selectedCurrency = computed(() => user.value?.preferredCurrency ?? "USD");
 
 async function load() {
   loading.value = true;
@@ -85,6 +86,7 @@ onMounted(() => {
         :key="coin.id"
         :crypto="coin"
         :is-favorite="true"
+        :currency="selectedCurrency"
         @select="openDetail"
         @toggle-favorite="handleRemove"
       />
@@ -94,6 +96,7 @@ onMounted(() => {
       :open="dialogOpen"
       :crypto="selectedCrypto"
       :loading="loadingDetail"
+      :currency="selectedCurrency"
       @update:open="dialogOpen = $event"
     />
   </div>

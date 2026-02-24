@@ -36,6 +36,7 @@ const ALL_TYPES_VALUE = "all";
 const type = ref<typeof ALL_TYPES_VALUE | "coin" | "token">(ALL_TYPES_VALUE);
 const sort = ref<ListCryptoSort>("price_desc");
 const LIMIT_OPTIONS = [12, 24, 48] as const;
+const selectedCurrency = computed(() => user.value?.preferredCurrency ?? "USD");
 let abortController: AbortController | null = null;
 
 async function loadCryptos() {
@@ -187,6 +188,7 @@ onMounted(() => {
         :key="coin.id"
         :crypto="coin"
         :is-favorite="isFavorite(coin.id)"
+        :currency="selectedCurrency"
         @select="openDetail"
         @toggle-favorite="toggleFavorite"
       />
@@ -209,6 +211,7 @@ onMounted(() => {
       :open="dialogOpen"
       :crypto="selectedCrypto"
       :loading="loadingDetail"
+      :currency="selectedCurrency"
       @update:open="dialogOpen = $event"
     />
   </div>

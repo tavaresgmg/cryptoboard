@@ -277,7 +277,7 @@ const userRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
         throw new AppError("User not found", 404);
       }
 
-      const data = await cryptoService.getByIds(user.favorites);
+      const data = await cryptoService.getByIds(user.favorites, user.preferredCurrency);
       return reply.send({ data });
     }
   );

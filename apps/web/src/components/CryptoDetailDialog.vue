@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CryptoDetail } from "@crypto/shared";
+import type { CryptoDetail, SupportedCurrency } from "@crypto/shared";
 import { useI18n } from "vue-i18n";
 import {
   Dialog,
@@ -11,31 +11,56 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-const props = defineProps<{
-  open: boolean;
-  crypto: CryptoDetail | null;
-  loading: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    open: boolean;
+    crypto: CryptoDetail | null;
+    loading: boolean;
+    currency?: SupportedCurrency;
+  }>(),
+  {
+    currency: "USD"
+  }
+);
 
 defineEmits<{
   "update:open": [value: boolean];
 }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
-function fmt(value: number | undefined, decimals = 2) {
+function formatNumber(value: number | undefined, decimals = 2) {
   if (value === undefined) return "—";
-  return value.toLocaleString("en-US", {
+  return value.toLocaleString(locale.value, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   });
 }
 
-function fmtLarge(value: number | undefined) {
+function formatCurrency(value: number | undefined, decimals = 2) {
   if (value === undefined) return "—";
-  if (value >= 1_000_000_000) return `$ ${(value / 1_000_000_000).toFixed(2)}B`;
-  if (value >= 1_000_000) return `$ ${(value / 1_000_000).toFixed(2)}M`;
-  return `$ ${fmt(value)}`;
+  return new Intl.NumberFormat(locale.value, {
+    style: "currency",
+    currency: props.currency,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  }).format(value);
+}
+
+function formatLargeCurrency(value: number | undefined) {
+  if (value === undefined) return "—";
+  if (value < 1_000_000) {
+    return formatCurrency(value);
+  }
+
+  return new Intl.NumberFormat(locale.value, {
+    style: "currency",
+    currency: props.currency,
+    notation: "compact",
+    compactDisplay: "short",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 function changeClass(value?: number) {
@@ -81,7 +106,7 @@ function formatChange(value?: number) {
 
         <div class="space-y-4 mt-4">
           <div class="flex items-baseline justify-between">
-            <span class="text-2xl font-bold tabular-nums">$ {{ fmt(crypto.price) }}</span>
+            <span class="text-2xl font-bold tabular-nums">{{ formatCurrency(crypto.price) }}</span>
             <span
               class="text-lg tabular-nums font-medium"
               :class="changeClass(crypto.percentChange24h)"
@@ -118,19 +143,21 @@ function formatChange(value?: number) {
           <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p class="text-muted-foreground">{{ t("crypto.marketCap") }}</p>
-              <p class="font-medium tabular-nums">{{ fmtLarge(crypto.marketCap) }}</p>
+              <p class="font-medium tabular-nums">{{ formatLargeCurrency(crypto.marketCap) }}</p>
             </div>
             <div>
               <p class="text-muted-foreground">{{ t("crypto.volume") }}</p>
-              <p class="font-medium tabular-nums">{{ fmtLarge(crypto.volume24h) }}</p>
+              <p class="font-medium tabular-nums">{{ formatLargeCurrency(crypto.volume24h) }}</p>
             </div>
             <div>
               <p class="text-muted-foreground">{{ t("crypto.supply") }}</p>
-              <p class="font-medium tabular-nums">{{ fmt(crypto.circulatingSupply, 0) }}</p>
+              <p class="font-medium tabular-nums">
+                {{ formatNumber(crypto.circulatingSupply, 0) }}
+              </p>
             </div>
             <div v-if="crypto.maxSupply">
               <p class="text-muted-foreground">{{ t("crypto.maxSupply") }}</p>
-              <p class="font-medium tabular-nums">{{ fmt(crypto.maxSupply, 0) }}</p>
+              <p class="font-medium tabular-nums">{{ formatNumber(crypto.maxSupply, 0) }}</p>
             </div>
           </div>
 
