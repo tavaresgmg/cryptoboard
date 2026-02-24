@@ -3,13 +3,7 @@ const tsPlugin = require("@typescript-eslint/eslint-plugin");
 
 module.exports = [
   {
-    ignores: [
-      "**/node_modules/**",
-      "**/dist/**",
-      ".turbo/**",
-      "coverage/**",
-      "docs/**"
-    ]
+    ignores: ["**/node_modules/**", "**/dist/**", ".turbo/**", "coverage/**", "docs/**"]
   },
   {
     files: ["**/*.ts"],
@@ -29,8 +23,8 @@ module.exports = [
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_"
         }
       ]
     }

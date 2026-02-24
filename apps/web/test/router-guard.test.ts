@@ -32,7 +32,7 @@ describe("router guards", () => {
     authMocks.ensureSession.mockReset();
   });
 
-  test("deve redirecionar para login quando usuario nao autenticado acessa rota protegida", async () => {
+  test("should redirect to login when unauthenticated user visits a protected route", async () => {
     authMocks.isAuthenticated.mockReturnValue(false);
     authMocks.ensureSession.mockResolvedValue(false);
 
@@ -46,7 +46,7 @@ describe("router guards", () => {
     expect(router.currentRoute.value.query.redirect).toBe("/");
   });
 
-  test("deve permitir rota protegida quando sessao existe", async () => {
+  test("should allow protected route when session exists", async () => {
     authMocks.isAuthenticated.mockReturnValue(false);
     authMocks.ensureSession.mockResolvedValue(true);
 
@@ -59,7 +59,7 @@ describe("router guards", () => {
     expect(router.currentRoute.value.name).toBe("cryptos");
   });
 
-  test("deve redirecionar login para cryptos quando usuario ja autenticado", async () => {
+  test("should redirect login to cryptos when user is already authenticated", async () => {
     authMocks.isAuthenticated.mockReturnValue(true);
     authMocks.ensureSession.mockResolvedValue(true);
 
@@ -72,7 +72,7 @@ describe("router guards", () => {
     expect(router.currentRoute.value.name).toBe("cryptos");
   });
 
-  test("deve permitir forgot-password sem autenticacao", async () => {
+  test("should allow forgot-password without authentication", async () => {
     authMocks.isAuthenticated.mockReturnValue(false);
     authMocks.ensureSession.mockResolvedValue(false);
 
@@ -85,7 +85,7 @@ describe("router guards", () => {
     expect(router.currentRoute.value.name).toBe("forgot-password");
   });
 
-  test("deve proteger /favorites exigindo autenticacao", async () => {
+  test("should protect /favorites when authentication is required", async () => {
     authMocks.isAuthenticated.mockReturnValue(false);
     authMocks.ensureSession.mockResolvedValue(false);
 
@@ -99,7 +99,7 @@ describe("router guards", () => {
     expect(router.currentRoute.value.query.redirect).toBe("/favorites");
   });
 
-  test("deve proteger /profile exigindo autenticacao", async () => {
+  test("should protect /profile when authentication is required", async () => {
     authMocks.isAuthenticated.mockReturnValue(false);
     authMocks.ensureSession.mockResolvedValue(false);
 
@@ -113,16 +113,30 @@ describe("router guards", () => {
     expect(router.currentRoute.value.query.redirect).toBe("/profile");
   });
 
-  test("deve mostrar 404 para rota inexistente", async () => {
+  test("should render 404 for unknown route", async () => {
     authMocks.isAuthenticated.mockReturnValue(false);
     authMocks.ensureSession.mockResolvedValue(false);
 
     const { createAppRouter } = await import("../src/router/index");
     const router = createAppRouter(createMemoryHistory());
 
-    await router.push("/url-invalida");
+    await router.push("/invalid-route");
     await router.isReady();
 
     expect(router.currentRoute.value.name).toBe("not-found");
+  });
+
+  test("should protect /onboarding when authentication is required", async () => {
+    authMocks.isAuthenticated.mockReturnValue(false);
+    authMocks.ensureSession.mockResolvedValue(false);
+
+    const { createAppRouter } = await import("../src/router/index");
+    const router = createAppRouter(createMemoryHistory());
+
+    await router.push("/onboarding");
+    await router.isReady();
+
+    expect(router.currentRoute.value.name).toBe("login");
+    expect(router.currentRoute.value.query.redirect).toBe("/onboarding");
   });
 });

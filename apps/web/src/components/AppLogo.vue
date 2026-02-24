@@ -12,7 +12,7 @@ withDefaults(defineProps<{ size?: "sm" | "md" | "lg"; iconOnly?: boolean }>(), {
       'gap-1.5': size === 'sm',
       'gap-2': size === 'md',
       'gap-3': size === 'lg',
-      'gap-0': iconOnly,
+      'gap-0': iconOnly
     }"
   >
     <svg
@@ -22,17 +22,38 @@ withDefaults(defineProps<{ size?: "sm" | "md" | "lg"; iconOnly?: boolean }>(), {
       :class="{
         'size-6': size === 'sm',
         'size-8': size === 'md',
-        'size-10': size === 'lg',
+        'size-10': size === 'lg'
       }"
     >
-      <!-- Rounded square background -->
       <rect width="32" height="32" rx="8" class="fill-primary" />
-      <!-- Bar chart / pulse line representing crypto activity -->
-      <rect x="6" y="18" width="4" height="8" rx="1" class="fill-primary-foreground" opacity="0.7" />
-      <rect x="12" y="12" width="4" height="14" rx="1" class="fill-primary-foreground" opacity="0.85" />
+      <rect
+        x="6"
+        y="18"
+        width="4"
+        height="8"
+        rx="1"
+        class="fill-primary-foreground"
+        opacity="0.7"
+      />
+      <rect
+        x="12"
+        y="12"
+        width="4"
+        height="14"
+        rx="1"
+        class="fill-primary-foreground"
+        opacity="0.85"
+      />
       <rect x="18" y="8" width="4" height="18" rx="1" class="fill-primary-foreground" />
-      <rect x="24" y="14" width="4" height="12" rx="1" class="fill-primary-foreground" opacity="0.7" />
-      <!-- Upward trend line -->
+      <rect
+        x="24"
+        y="14"
+        width="4"
+        height="12"
+        rx="1"
+        class="fill-primary-foreground"
+        opacity="0.7"
+      />
       <path
         d="M8 17 L14 11 L20 7 L26 13"
         stroke="currentColor"
@@ -41,19 +62,14 @@ withDefaults(defineProps<{ size?: "sm" | "md" | "lg"; iconOnly?: boolean }>(), {
         stroke-linejoin="round"
         class="text-primary-foreground"
       />
-      <!-- Arrow tip -->
-      <path
-        d="M23 10 L26 13 L23 13"
-        fill="currentColor"
-        class="text-primary-foreground"
-      />
+      <path d="M23 10 L26 13 L23 13" fill="currentColor" class="text-primary-foreground" />
     </svg>
     <div
       v-if="!iconOnly"
       class="flex flex-col leading-none"
       :class="{
         'gap-0': size === 'sm',
-        'gap-0.5': size === 'md' || size === 'lg',
+        'gap-0.5': size === 'md' || size === 'lg'
       }"
     >
       <span
@@ -61,17 +77,19 @@ withDefaults(defineProps<{ size?: "sm" | "md" | "lg"; iconOnly?: boolean }>(), {
         :class="{
           'text-sm': size === 'sm',
           'text-base': size === 'md',
-          'text-xl': size === 'lg',
+          'text-xl': size === 'lg'
         }"
-      >Crypto</span>
+        >Crypto</span
+      >
       <span
         class="text-muted-foreground"
         :class="{
           'text-[10px]': size === 'sm',
           'text-xs': size === 'md',
-          'text-sm': size === 'lg',
+          'text-sm': size === 'lg'
         }"
-      >Board</span>
+        >Board</span
+      >
     </div>
   </div>
 </template>

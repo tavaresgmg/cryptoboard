@@ -18,51 +18,51 @@ export function createAppRouter(history?: RouterHistory) {
           {
             path: "",
             name: "cryptos",
-            component: () => import("@/views/CryptoListView.vue"),
+            component: () => import("@/views/CryptoListView.vue")
           },
           {
             path: "favorites",
             name: "favorites",
-            component: () => import("@/views/FavoritesView.vue"),
+            component: () => import("@/views/FavoritesView.vue")
           },
           {
             path: "profile",
             name: "profile",
-            component: () => import("@/views/ProfileView.vue"),
+            component: () => import("@/views/ProfileView.vue")
           },
           {
             path: "onboarding",
             name: "onboarding",
-            component: () => import("@/views/OnboardingView.vue"),
-          },
-        ],
+            component: () => import("@/views/OnboardingView.vue")
+          }
+        ]
       },
       {
         path: "/login",
         name: "login",
-        component: () => import("@/views/LoginView.vue"),
+        component: () => import("@/views/LoginView.vue")
       },
       {
         path: "/register",
         name: "register",
-        component: () => import("@/views/RegisterView.vue"),
+        component: () => import("@/views/RegisterView.vue")
       },
       {
         path: "/forgot-password",
         name: "forgot-password",
-        component: () => import("@/views/ForgotPasswordView.vue"),
+        component: () => import("@/views/ForgotPasswordView.vue")
       },
       {
         path: "/reset-password",
         name: "reset-password",
-        component: () => import("@/views/ResetPasswordView.vue"),
+        component: () => import("@/views/ResetPasswordView.vue")
       },
       {
         path: "/:pathMatch(.*)*",
         name: "not-found",
-        component: () => import("@/views/NotFoundView.vue"),
-      },
-    ],
+        component: () => import("@/views/NotFoundView.vue")
+      }
+    ]
   });
 
   router.beforeEach(async (to) => {
@@ -73,7 +73,7 @@ export function createAppRouter(history?: RouterHistory) {
       if (!hasSession) {
         return {
           name: "login",
-          query: { redirect: to.fullPath },
+          query: { redirect: to.fullPath }
         };
       }
       return true;
@@ -93,7 +93,7 @@ export function createAppRouter(history?: RouterHistory) {
 }
 
 const router = createAppRouter(
-  typeof window !== "undefined" ? createWebHistory() : createMemoryHistory(),
+  typeof window !== "undefined" ? createWebHistory() : createMemoryHistory()
 );
 
 export default router;

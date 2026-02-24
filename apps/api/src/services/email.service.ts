@@ -13,10 +13,17 @@ export async function sendResetPasswordEmail(
 ): Promise<void> {
   if (!env.RESEND_API_KEY || !env.RESEND_FROM) {
     if (env.NODE_ENV === "production") {
-      console.warn("[email] RESEND not configured in production — password reset email skipped for %s", input.to);
+      console.warn(
+        "[email] RESEND not configured in production — password reset email skipped for %s",
+        input.to
+      );
     } else {
       const resetUrl = `${env.WEB_APP_URL}/reset-password?token=${encodeURIComponent(input.token)}`;
-      console.log("[email] RESEND not configured — skipping send. to=%s resetUrl=%s", input.to, resetUrl);
+      console.log(
+        "[email] RESEND not configured — skipping send. to=%s resetUrl=%s",
+        input.to,
+        resetUrl
+      );
     }
     return;
   }

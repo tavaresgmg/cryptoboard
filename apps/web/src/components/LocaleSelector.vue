@@ -7,7 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
@@ -16,13 +16,13 @@ const { locale } = useI18n();
 const labels: Record<SupportedLanguage, string> = {
   es: "Español",
   en: "English",
-  "pt-BR": "Português",
+  "pt-BR": "Português"
 };
 
 const shortLabels: Record<SupportedLanguage, string> = {
   es: "ES",
   en: "EN",
-  "pt-BR": "PT",
+  "pt-BR": "PT"
 };
 
 function selectLocale(lang: SupportedLanguage) {

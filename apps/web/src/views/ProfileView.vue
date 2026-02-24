@@ -11,16 +11,12 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/composables/useUser";
-import {
-  getMyAvatarSignedUrl,
-  updateMyProfile,
-  uploadAvatar
-} from "@/services/auth-client";
+import { getMyAvatarSignedUrl, updateMyProfile, uploadAvatar } from "@/services/auth-client";
 
 const { t } = useI18n();
 const { user, setUser, loadUser } = useUser();
@@ -64,7 +60,7 @@ async function saveProfile() {
     const updated = await updateMyProfile({
       name: profileName.value,
       description: profileDescription.value || undefined,
-      preferredCurrency: profileCurrency.value as "USD" | "EUR" | "BRL" | "GBP",
+      preferredCurrency: profileCurrency.value as "USD" | "EUR" | "BRL" | "GBP"
     });
     setUser(updated);
     toast.success(t("profile.profileUpdated"));
@@ -90,7 +86,7 @@ async function submitAvatar() {
       setUser({
         ...user.value,
         favorites: [...user.value.favorites],
-        hasAvatar: true,
+        hasAvatar: true
       });
     }
 
@@ -106,13 +102,17 @@ async function submitAvatar() {
   }
 }
 
-watch(user, (u) => {
-  if (u) {
-    syncForm();
-  }
+watch(
+  user,
+  (u) => {
+    if (u) {
+      syncForm();
+    }
 
-  void loadAvatar();
-}, { immediate: true });
+    void loadAvatar();
+  },
+  { immediate: true }
+);
 </script>
 
 <template>

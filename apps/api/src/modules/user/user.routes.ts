@@ -206,7 +206,11 @@ const userRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
         throw new AppError("Cryptocurrency not found", 404);
       }
 
-      const { user, reason } = await userRepository.addFavoriteAtomic(authUser.sub, coinId, MAX_FAVORITES);
+      const { user, reason } = await userRepository.addFavoriteAtomic(
+        authUser.sub,
+        coinId,
+        MAX_FAVORITES
+      );
       if (!user) {
         throw new AppError("User not found", 404);
       }

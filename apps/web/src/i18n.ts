@@ -15,7 +15,7 @@ const messages = {
       unexpectedError: "Error inesperado",
       switchToLight: "Cambiar a modo claro",
       switchToDark: "Cambiar a modo oscuro",
-      close: "Cerrar",
+      close: "Cerrar"
     },
     auth: {
       loginTitle: "Iniciar sesión",
@@ -32,7 +32,7 @@ const messages = {
       resetTitle: "Restablecer contraseña",
       resetSubtitle: "Ingresa el token y tu nueva contraseña.",
       resetAction: "Restablecer contraseña",
-      tokenLabel: "Token",
+      tokenLabel: "Token"
     },
     nav: {
       appName: "CryptoBoard",
@@ -40,7 +40,7 @@ const messages = {
       cryptos: "Criptomonedas",
       favorites: "Favoritos",
       profile: "Perfil",
-      logout: "Salir",
+      logout: "Salir"
     },
     crypto: {
       title: "Criptomonedas",
@@ -67,7 +67,7 @@ const messages = {
       supply: "Circulante",
       maxSupply: "Suministro máximo",
       description: "Descripción",
-      noResults: "No se encontraron resultados.",
+      noResults: "No se encontraron resultados."
     },
     favorites: {
       title: "Favoritos",
@@ -76,7 +76,7 @@ const messages = {
       goToCryptos: "Ver criptomonedas",
       removed: "Eliminado de favoritos",
       addToFavorites: "Agregar a favoritos",
-      removeFromFavorites: "Eliminar de favoritos",
+      removeFromFavorites: "Eliminar de favoritos"
     },
     profile: {
       title: "Perfil",
@@ -90,7 +90,7 @@ const messages = {
       saving: "Guardando...",
       uploading: "Subiendo...",
       profileUpdated: "Perfil actualizado",
-      avatarUpdated: "Avatar actualizado",
+      avatarUpdated: "Avatar actualizado"
     },
     onboarding: {
       title: "Completa tu perfil",
@@ -103,7 +103,7 @@ const messages = {
       submit: "Guardar y continuar",
       skip: "Omitir por ahora",
       saving: "Guardando...",
-      completed: "Perfil completado",
+      completed: "Perfil completado"
     },
     pagination: {
       page: "Página",
@@ -113,13 +113,13 @@ const messages = {
       previous: "Anterior",
       next: "Siguiente",
       last: "Última",
-      morePages: "Más páginas",
+      morePages: "Más páginas"
     },
     notFound: {
       title: "Página no encontrada",
       description: "La página que buscas no existe.",
-      goHome: "Ir al inicio",
-    },
+      goHome: "Ir al inicio"
+    }
   },
   en: {
     common: {
@@ -131,7 +131,7 @@ const messages = {
       unexpectedError: "Unexpected error",
       switchToLight: "Switch to light mode",
       switchToDark: "Switch to dark mode",
-      close: "Close",
+      close: "Close"
     },
     auth: {
       loginTitle: "Sign in",
@@ -148,7 +148,7 @@ const messages = {
       resetTitle: "Reset password",
       resetSubtitle: "Enter the token and your new password.",
       resetAction: "Reset password",
-      tokenLabel: "Token",
+      tokenLabel: "Token"
     },
     nav: {
       appName: "CryptoBoard",
@@ -156,7 +156,7 @@ const messages = {
       cryptos: "Cryptos",
       favorites: "Favorites",
       profile: "Profile",
-      logout: "Sign out",
+      logout: "Sign out"
     },
     crypto: {
       title: "Cryptocurrencies",
@@ -183,7 +183,7 @@ const messages = {
       supply: "Circulating",
       maxSupply: "Max Supply",
       description: "Description",
-      noResults: "No results found.",
+      noResults: "No results found."
     },
     favorites: {
       title: "Favorites",
@@ -192,7 +192,7 @@ const messages = {
       goToCryptos: "Browse cryptos",
       removed: "Removed from favorites",
       addToFavorites: "Add to favorites",
-      removeFromFavorites: "Remove from favorites",
+      removeFromFavorites: "Remove from favorites"
     },
     profile: {
       title: "Profile",
@@ -206,7 +206,7 @@ const messages = {
       saving: "Saving...",
       uploading: "Uploading...",
       profileUpdated: "Profile updated",
-      avatarUpdated: "Avatar updated",
+      avatarUpdated: "Avatar updated"
     },
     onboarding: {
       title: "Complete your profile",
@@ -219,7 +219,7 @@ const messages = {
       submit: "Save and continue",
       skip: "Skip for now",
       saving: "Saving...",
-      completed: "Profile completed",
+      completed: "Profile completed"
     },
     pagination: {
       page: "Page",
@@ -229,13 +229,13 @@ const messages = {
       previous: "Previous",
       next: "Next",
       last: "Last",
-      morePages: "More pages",
+      morePages: "More pages"
     },
     notFound: {
       title: "Page not found",
       description: "The page you are looking for does not exist.",
-      goHome: "Go home",
-    },
+      goHome: "Go home"
+    }
   },
   "pt-BR": {
     common: {
@@ -247,7 +247,7 @@ const messages = {
       unexpectedError: "Erro inesperado",
       switchToLight: "Mudar para modo claro",
       switchToDark: "Mudar para modo escuro",
-      close: "Fechar",
+      close: "Fechar"
     },
     auth: {
       loginTitle: "Entrar",
@@ -264,7 +264,7 @@ const messages = {
       resetTitle: "Redefinir senha",
       resetSubtitle: "Informe o token recebido e a nova senha.",
       resetAction: "Redefinir senha",
-      tokenLabel: "Token",
+      tokenLabel: "Token"
     },
     nav: {
       appName: "CryptoBoard",
@@ -272,7 +272,7 @@ const messages = {
       cryptos: "Criptomoedas",
       favorites: "Favoritos",
       profile: "Perfil",
-      logout: "Sair",
+      logout: "Sair"
     },
     crypto: {
       title: "Criptomoedas",
@@ -299,7 +299,7 @@ const messages = {
       supply: "Circulante",
       maxSupply: "Fornecimento máximo",
       description: "Descrição",
-      noResults: "Nenhum resultado encontrado.",
+      noResults: "Nenhum resultado encontrado."
     },
     favorites: {
       title: "Favoritos",
@@ -308,7 +308,7 @@ const messages = {
       goToCryptos: "Ver criptomoedas",
       removed: "Removido dos favoritos",
       addToFavorites: "Adicionar aos favoritos",
-      removeFromFavorites: "Remover dos favoritos",
+      removeFromFavorites: "Remover dos favoritos"
     },
     profile: {
       title: "Perfil",
@@ -322,7 +322,7 @@ const messages = {
       saving: "Salvando...",
       uploading: "Enviando...",
       profileUpdated: "Perfil atualizado",
-      avatarUpdated: "Avatar atualizado",
+      avatarUpdated: "Avatar atualizado"
     },
     onboarding: {
       title: "Complete seu perfil",
@@ -335,7 +335,7 @@ const messages = {
       submit: "Salvar e continuar",
       skip: "Pular por agora",
       saving: "Salvando...",
-      completed: "Perfil concluído",
+      completed: "Perfil concluído"
     },
     pagination: {
       page: "Página",
@@ -345,14 +345,14 @@ const messages = {
       previous: "Anterior",
       next: "Próxima",
       last: "Última",
-      morePages: "Mais páginas",
+      morePages: "Mais páginas"
     },
     notFound: {
       title: "Página não encontrada",
       description: "A página que você procura não existe.",
-      goHome: "Ir para o início",
-    },
-  },
+      goHome: "Ir para o início"
+    }
+  }
 } as const;
 
 function normalizeLocale(locale: string): SupportedLanguage {
@@ -371,7 +371,7 @@ function normalizeLocale(locale: string): SupportedLanguage {
   return "es";
 }
 
-export function getInitialLocale(): SupportedLanguage {
+function getInitialLocale(): SupportedLanguage {
   if (typeof localStorage === "undefined") return "es";
 
   const storedLocale = localStorage.getItem(LOCALE_STORAGE_KEY);
@@ -390,7 +390,7 @@ export const i18n = createI18n({
   legacy: false,
   locale: getInitialLocale(),
   fallbackLocale: "es",
-  messages,
+  messages
 });
 
 if (typeof document !== "undefined") {

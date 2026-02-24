@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
 import SearchInput from "@/components/SearchInput.vue";
 import CryptoCard from "@/components/CryptoCard.vue";
@@ -18,12 +18,7 @@ import CryptoDetailDialog from "@/components/CryptoDetailDialog.vue";
 import LoadingSkeleton from "@/components/LoadingSkeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useUser } from "@/composables/useUser";
-import {
-  addFavorite,
-  getCryptoDetail,
-  listCryptos,
-  removeFavorite,
-} from "@/services/auth-client";
+import { addFavorite, getCryptoDetail, listCryptos, removeFavorite } from "@/services/auth-client";
 
 const { t } = useI18n();
 const { user, updateFavorites } = useUser();
@@ -50,13 +45,16 @@ async function loadCryptos() {
 
   loadingList.value = true;
   try {
-    const response = await listCryptos({
-      page: page.value,
-      limit: limit.value,
-      search: search.value || undefined,
-      type: type.value === ALL_TYPES_VALUE ? undefined : type.value,
-      sort: sort.value,
-    }, signal);
+    const response = await listCryptos(
+      {
+        page: page.value,
+        limit: limit.value,
+        search: search.value || undefined,
+        type: type.value === ALL_TYPES_VALUE ? undefined : type.value,
+        sort: sort.value
+      },
+      signal
+    );
     cryptos.value = response.data;
     total.value = response.pagination.total;
   } catch (err) {
@@ -86,9 +84,7 @@ function isFavorite(coinId: string): boolean {
 
 async function toggleFavorite(coinId: string) {
   try {
-    const payload = isFavorite(coinId)
-      ? await removeFavorite(coinId)
-      : await addFavorite(coinId);
+    const payload = isFavorite(coinId) ? await removeFavorite(coinId) : await addFavorite(coinId);
     updateFavorites(payload.favorites);
   } catch (err) {
     toast.error(err instanceof Error ? err.message : t("common.unexpectedError"));
@@ -109,10 +105,14 @@ function nextPage() {
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit.value)));
 
-watchDebounced(search, () => {
-  page.value = 1;
-  void loadCryptos();
-}, { debounce: 300, maxWait: 1000 });
+watchDebounced(
+  search,
+  () => {
+    page.value = 1;
+    void loadCryptos();
+  },
+  { debounce: 300, maxWait: 1000 }
+);
 
 watch([type, sort, limit], () => {
   page.value = 1;
@@ -133,11 +133,7 @@ onMounted(() => {
     <h1 class="text-2xl font-bold mb-6">{{ t("crypto.title") }}</h1>
 
     <div class="flex flex-col lg:flex-row gap-3 mb-6">
-      <SearchInput
-        v-model="search"
-        :placeholder="t('crypto.searchPlaceholder')"
-        class="flex-1"
-      />
+      <SearchInput v-model="search" :placeholder="t('crypto.searchPlaceholder')" class="flex-1" />
       <Select v-model="type">
         <SelectTrigger class="w-full sm:w-[140px]">
           <SelectValue :placeholder="t('crypto.filterAll')" />
@@ -162,10 +158,7 @@ onMounted(() => {
           <SelectItem value="name_desc">{{ t("crypto.sortNameDesc") }}</SelectItem>
         </SelectContent>
       </Select>
-      <Select
-        :model-value="String(limit)"
-        @update:model-value="(value) => (limit = Number(value))"
-      >
+      <Select :model-value="String(limit)" @update:model-value="(value) => (limit = Number(value))">
         <SelectTrigger class="w-full sm:w-[140px]">
           <SelectValue />
         </SelectTrigger>
@@ -185,7 +178,10 @@ onMounted(() => {
       :description="t('crypto.noResults')"
     />
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+    <div
+      v-else
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
+    >
       <CryptoCard
         v-for="coin in cryptos"
         :key="coin.id"
@@ -201,8 +197,8 @@ onMounted(() => {
         {{ t("pagination.previous") }}
       </Button>
       <span class="text-sm text-muted-foreground">
-        {{ t("pagination.page") }} {{ page }} {{ t("pagination.of") }} {{ totalPages }}
-        · {{ t("pagination.total") }} {{ total }}
+        {{ t("pagination.page") }} {{ page }} {{ t("pagination.of") }} {{ totalPages }} ·
+        {{ t("pagination.total") }} {{ total }}
       </span>
       <Button variant="outline" :disabled="page * limit >= total" @click="nextPage">
         {{ t("pagination.next") }}

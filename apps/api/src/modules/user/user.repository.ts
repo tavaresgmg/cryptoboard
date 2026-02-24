@@ -113,10 +113,7 @@ class UserRepository {
     ).exec();
   }
 
-  async updateProfile(
-    userId: string,
-    input: UpdateUserProfileInput
-  ): Promise<UserDocument | null> {
+  async updateProfile(userId: string, input: UpdateUserProfileInput): Promise<UserDocument | null> {
     const update: Partial<{
       name: string;
       email: string;

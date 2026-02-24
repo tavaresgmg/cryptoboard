@@ -6,7 +6,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -27,7 +27,7 @@ function fmt(value: number | undefined, decimals = 2) {
   if (value === undefined) return "—";
   return value.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    maximumFractionDigits: decimals
   });
 }
 
@@ -82,7 +82,10 @@ function formatChange(value?: number) {
         <div class="space-y-4 mt-4">
           <div class="flex items-baseline justify-between">
             <span class="text-2xl font-bold tabular-nums">$ {{ fmt(crypto.price) }}</span>
-            <span class="text-lg tabular-nums font-medium" :class="changeClass(crypto.percentChange24h)">
+            <span
+              class="text-lg tabular-nums font-medium"
+              :class="changeClass(crypto.percentChange24h)"
+            >
               {{ formatChange(crypto.percentChange24h) }}
             </span>
           </div>

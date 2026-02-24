@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from "vue"
-import { useI18n } from "vue-i18n"
-import { PanelLeft } from "lucide-vue-next"
-import { cn } from "@/lib/utils"
-import { Button } from '@/components/ui/button'
-import { useSidebar } from "./utils"
+import type { HTMLAttributes } from "vue";
+import { useI18n } from "vue-i18n";
+import { PanelLeft } from "lucide-vue-next";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useSidebar } from "./utils";
 
 const props = defineProps<{
-  class?: HTMLAttributes["class"]
-}>()
+  class?: HTMLAttributes["class"];
+}>();
 
-const { t } = useI18n()
-const { toggleSidebar } = useSidebar()
+const { t } = useI18n();
+const { toggleSidebar } = useSidebar();
 </script>
 
 <template>

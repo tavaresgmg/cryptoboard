@@ -142,14 +142,10 @@ export async function logoutUser(userId: string): Promise<void> {
   await userRepository.clearRefreshTokenHash(userId);
 }
 
-export async function forgotPassword(
-  env: AppEnv,
-  input: unknown
-): Promise<AuthMessageResponse> {
+export async function forgotPassword(env: AppEnv, input: unknown): Promise<AuthMessageResponse> {
   const parsed: ForgotPasswordInput = forgotPasswordInputSchema.parse(input);
   const user = await userRepository.findByEmail(parsed.email);
 
-  // Always return generic message to prevent user enumeration.
   if (!user) {
     return {
       message: "If the email exists, we will send reset instructions"

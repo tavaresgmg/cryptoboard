@@ -21,9 +21,6 @@ defineEmits<{
     :aria-label="active ? t('favorites.removeFromFavorites') : t('favorites.addToFavorites')"
     @click.stop="$emit('toggle')"
   >
-    <Star
-      class="size-4"
-      :class="active ? 'fill-primary text-primary' : 'text-muted-foreground'"
-    />
+    <Star class="size-4" :class="active ? 'fill-primary text-primary' : 'text-muted-foreground'" />
   </Button>
 </template>

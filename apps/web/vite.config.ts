@@ -21,6 +21,17 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["test/**/*.test.ts"]
+    include: ["test/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      include: ["src/services/**/*.ts", "src/router/**/*.ts", "src/composables/**/*.ts"],
+      thresholds: {
+        statements: 75,
+        branches: 65,
+        functions: 75,
+        lines: 75
+      }
+    }
   }
 });

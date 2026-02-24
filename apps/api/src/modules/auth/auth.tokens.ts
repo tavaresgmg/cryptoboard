@@ -11,7 +11,7 @@ export interface TokenPayload {
   tokenType: "access" | "refresh";
 }
 
-export interface SessionTokens {
+interface SessionTokens {
   accessToken: string;
   refreshToken: string;
 }

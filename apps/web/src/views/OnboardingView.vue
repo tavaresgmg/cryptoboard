@@ -12,17 +12,13 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/composables/useUser";
-import {
-  getMyAvatarSignedUrl,
-  updateMyProfile,
-  uploadAvatar,
-} from "@/services/auth-client";
+import { getMyAvatarSignedUrl, updateMyProfile, uploadAvatar } from "@/services/auth-client";
 
 const router = useRouter();
 const { t } = useI18n();
@@ -72,7 +68,7 @@ async function loadAvatar() {
       setUser({
         ...user.value,
         favorites: [...user.value.favorites],
-        hasAvatar: true,
+        hasAvatar: true
       });
     }
   } catch {
@@ -84,9 +80,7 @@ async function syncInitialState() {
   if (!user.value) {
     try {
       await loadUser();
-    } catch {
-      // handled by auth guards/toasts in parent flows
-    }
+    } catch {}
   }
 
   if (user.value) {
@@ -103,7 +97,7 @@ async function saveAndContinue() {
   try {
     const updatedUser = await updateMyProfile({
       preferredCurrency: preferredCurrency.value,
-      description: description.value.trim() || undefined,
+      description: description.value.trim() || undefined
     });
 
     setUser(updatedUser);
@@ -117,9 +111,7 @@ async function saveAndContinue() {
 
     try {
       await loadUser();
-    } catch {
-      // Local state is already synced above.
-    }
+    } catch {}
 
     toast.success(t("onboarding.completed"));
     await router.push({ name: "cryptos" });
@@ -160,7 +152,11 @@ onBeforeUnmount(() => {
             <Label>{{ t("onboarding.avatarLabel") }}</Label>
             <div class="flex items-center gap-4">
               <Avatar class="size-20">
-                <AvatarImage v-if="displayedAvatarSrc" :src="displayedAvatarSrc" :alt="user?.name ?? ''" />
+                <AvatarImage
+                  v-if="displayedAvatarSrc"
+                  :src="displayedAvatarSrc"
+                  :alt="user?.name ?? ''"
+                />
                 <AvatarFallback class="bg-primary text-primary-foreground text-xl">
                   {{ initials() }}
                 </AvatarFallback>

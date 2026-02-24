@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
@@ -25,7 +25,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  useSidebar,
+  useSidebar
 } from "@/components/ui/sidebar";
 import { useUser } from "@/composables/useUser";
 import { getMyAvatarSignedUrl } from "@/services/auth-client";
@@ -40,7 +40,7 @@ const showBrandText = computed(() => isMobile.value || state.value !== "collapse
 
 const navItems = [
   { to: "/", label: () => t("nav.cryptos"), icon: Coins, name: "cryptos" },
-  { to: "/favorites", label: () => t("nav.favorites"), icon: Heart, name: "favorites" },
+  { to: "/favorites", label: () => t("nav.favorites"), icon: Heart, name: "favorites" }
 ];
 
 function isActive(name: string) {
@@ -60,9 +60,13 @@ async function loadAvatar() {
   }
 }
 
-watch(user, () => {
-  void loadAvatar();
-}, { immediate: true });
+watch(
+  user,
+  () => {
+    void loadAvatar();
+  },
+  { immediate: true }
+);
 
 function initials() {
   const name = user.value?.name;
@@ -91,7 +95,10 @@ async function handleLogout() {
             :tooltip="t('nav.appName')"
             class="h-11 justify-start group-data-[collapsible=icon]:justify-center"
           >
-            <RouterLink to="/" class="flex w-full items-center group-data-[collapsible=icon]:justify-center">
+            <RouterLink
+              to="/"
+              class="flex w-full items-center group-data-[collapsible=icon]:justify-center"
+            >
               <AppLogo :size="showBrandText ? 'sm' : 'lg'" :icon-only="!showBrandText" />
             </RouterLink>
           </SidebarMenuButton>
@@ -128,19 +135,23 @@ async function handleLogout() {
     <SidebarFooter>
       <SidebarMenu>
         <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger as-child>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
               <SidebarMenuButton
                 size="lg"
                 class="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
               >
                 <Avatar class="size-9 rounded-lg">
                   <AvatarImage v-if="avatarSrc" :src="avatarSrc" :alt="user?.name ?? ''" />
-                  <AvatarFallback class="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold">
+                  <AvatarFallback
+                    class="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold"
+                  >
                     {{ initials() }}
                   </AvatarFallback>
                 </Avatar>
-                <div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                <div
+                  class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden"
+                >
                   <span class="truncate font-semibold">{{ user?.name }}</span>
                   <span class="truncate text-xs text-muted-foreground">{{ user?.email }}</span>
                 </div>
@@ -165,7 +176,10 @@ async function handleLogout() {
                 {{ t("nav.profile") }}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem class="text-destructive focus:text-destructive" @click="handleLogout">
+              <DropdownMenuItem
+                class="text-destructive focus:text-destructive"
+                @click="handleLogout"
+              >
                 <LogOut class="mr-2 size-4" />
                 {{ t("nav.logout") }}
               </DropdownMenuItem>

@@ -35,7 +35,9 @@ import type {
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 const DEFAULT_AVATAR_MAX_BYTES = 5 * 1024 * 1024;
-const parsedAvatarMaxBytes = Number(import.meta.env.VITE_AVATAR_MAX_BYTES ?? DEFAULT_AVATAR_MAX_BYTES);
+const parsedAvatarMaxBytes = Number(
+  import.meta.env.VITE_AVATAR_MAX_BYTES ?? DEFAULT_AVATAR_MAX_BYTES
+);
 export const AVATAR_MAX_BYTES =
   Number.isFinite(parsedAvatarMaxBytes) && parsedAvatarMaxBytes > 0
     ? parsedAvatarMaxBytes
@@ -124,9 +126,7 @@ async function assertOk(response: Response, fallbackMessage: string): Promise<vo
   try {
     const body = (await response.json()) as { message?: string };
     serverMessage = body.message;
-  } catch {
-    // response body not JSON — use fallback
-  }
+  } catch {}
 
   throw new Error(serverMessage ?? `${fallbackMessage} (HTTP ${response.status})`);
 }
@@ -282,9 +282,12 @@ export async function addFavorite(coinId: string): Promise<FavoritesResponse> {
     throw new Error("Invalid CoinId");
   }
 
-  const response = await requestWithAuth(`/users/me/favorites/${encodeURIComponent(normalizedCoinId)}`, {
-    method: "POST"
-  });
+  const response = await requestWithAuth(
+    `/users/me/favorites/${encodeURIComponent(normalizedCoinId)}`,
+    {
+      method: "POST"
+    }
+  );
   await assertOk(response, "Failed to add favorite");
 
   return favoritesResponseSchema.parse(await parseJson(response));
@@ -296,9 +299,12 @@ export async function removeFavorite(coinId: string): Promise<FavoritesResponse>
     throw new Error("Invalid CoinId");
   }
 
-  const response = await requestWithAuth(`/users/me/favorites/${encodeURIComponent(normalizedCoinId)}`, {
-    method: "DELETE"
-  });
+  const response = await requestWithAuth(
+    `/users/me/favorites/${encodeURIComponent(normalizedCoinId)}`,
+    {
+      method: "DELETE"
+    }
+  );
   await assertOk(response, "Failed to remove favorite");
 
   return favoritesResponseSchema.parse(await parseJson(response));

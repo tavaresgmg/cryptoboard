@@ -10,8 +10,7 @@ export function useUser() {
     loading.value = true;
     try {
       user.value = await fetchMe();
-    } catch (err) {
-      console.error("[useUser] loadUser failed:", err);
+    } catch {
     } finally {
       loading.value = false;
     }
@@ -38,6 +37,6 @@ export function useUser() {
     loadUser,
     setUser,
     updateFavorites,
-    signOut,
+    signOut
   };
 }

@@ -38,7 +38,9 @@ function readHeader(headers: HeadersInit | undefined, headerName: string): strin
     return found?.[1] ?? null;
   }
 
-  const found = Object.entries(headers).find(([key]) => key.toLowerCase() === headerName.toLowerCase());
+  const found = Object.entries(headers).find(
+    ([key]) => key.toLowerCase() === headerName.toLowerCase()
+  );
   if (!found) {
     return null;
   }
@@ -74,7 +76,7 @@ describe("auth-client", () => {
     vi.restoreAllMocks();
   });
 
-  test("login deve autenticar e carregar perfil", async () => {
+  test("login should authenticate and fetch profile", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = resolveUrl(input);
 
@@ -94,7 +96,7 @@ describe("auth-client", () => {
         return jsonResponse(profilePayload());
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -111,7 +113,7 @@ describe("auth-client", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  test("ensureSession deve compartilhar refresh em chamadas concorrentes", async () => {
+  test("ensureSession should share refresh call across concurrent requests", async () => {
     let refreshCalls = 0;
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -129,13 +131,16 @@ describe("auth-client", () => {
         return jsonResponse(profilePayload());
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     const client = await loadClient();
 
-    const [firstResult, secondResult] = await Promise.all([client.ensureSession(), client.ensureSession()]);
+    const [firstResult, secondResult] = await Promise.all([
+      client.ensureSession(),
+      client.ensureSession()
+    ]);
 
     expect(firstResult).toBe(true);
     expect(secondResult).toBe(true);
@@ -144,7 +149,7 @@ describe("auth-client", () => {
     expect(client.getCurrentUser()?.email).toBe("user@example.com");
   });
 
-  test("listCryptos deve tentar refresh em 401 e repetir requisicao", async () => {
+  test("listCryptos should retry after refresh when first request returns 401", async () => {
     let cryptoCalls = 0;
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -194,7 +199,7 @@ describe("auth-client", () => {
         return jsonResponse(profilePayload());
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -213,7 +218,7 @@ describe("auth-client", () => {
     expect(cryptoCalls).toBe(2);
   });
 
-  test("addFavorite/removeFavorite nao devem enviar content-type sem body", async () => {
+  test("addFavorite/removeFavorite should not send content-type when there is no body", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = resolveUrl(input);
 
@@ -246,7 +251,7 @@ describe("auth-client", () => {
         return jsonResponse({ favorites: [] });
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -264,7 +269,7 @@ describe("auth-client", () => {
     expect(removeResult.favorites).toEqual([]);
   });
 
-  test("logout deve limpar estado local mesmo com erro da API", async () => {
+  test("logout should clear local state even when API fails", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = resolveUrl(input);
 
@@ -288,7 +293,7 @@ describe("auth-client", () => {
         return new Response(null, { status: 500 });
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -306,7 +311,7 @@ describe("auth-client", () => {
     expect(client.getCurrentUser()).toBeNull();
   });
 
-  test("forgotPassword e resetPassword devem enviar payloads esperados", async () => {
+  test("forgotPassword and resetPassword should send expected payloads", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = resolveUrl(input);
 
@@ -322,7 +327,7 @@ describe("auth-client", () => {
         return jsonResponse({ message: "ok" });
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -335,7 +340,7 @@ describe("auth-client", () => {
     expect(resetResult.message).toBe("ok");
   });
 
-  test("updateMyProfile deve atualizar estado local do usuario", async () => {
+  test("updateMyProfile should update local user state", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = resolveUrl(input);
 
@@ -369,7 +374,7 @@ describe("auth-client", () => {
         });
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -386,23 +391,21 @@ describe("auth-client", () => {
     expect(client.getCurrentUser()?.name).toBe("Updated Name");
   });
 
-  test("uploadAvatar deve bloquear arquivo acima do limite antes de chamar API", async () => {
+  test("uploadAvatar should reject files above size limit before calling API", async () => {
     const fetchMock = vi.fn();
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     const client = await loadClient();
 
-    const oversizedFile = new File(
-      [new Uint8Array(5 * 1024 * 1024 + 1)],
-      "avatar.png",
-      { type: "image/png" }
-    );
+    const oversizedFile = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "avatar.png", {
+      type: "image/png"
+    });
 
     await expect(client.uploadAvatar(oversizedFile)).rejects.toThrow("Avatar must be at most 5 MB");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  test("uploadAvatar deve retornar mensagem amigavel quando API responde 413", async () => {
+  test("uploadAvatar should return friendly message when API responds 413", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = resolveUrl(input);
 
@@ -426,7 +429,7 @@ describe("auth-client", () => {
         return new Response("payload too large", { status: 413 });
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -438,10 +441,12 @@ describe("auth-client", () => {
     });
 
     const validSmallFile = new File([new Uint8Array(32)], "avatar.png", { type: "image/png" });
-    await expect(client.uploadAvatar(validSmallFile)).rejects.toThrow("Avatar must be at most 5 MB");
+    await expect(client.uploadAvatar(validSmallFile)).rejects.toThrow(
+      "Avatar must be at most 5 MB"
+    );
   });
 
-  test("getMyAvatarSignedUrl deve retornar null quando avatar nao existe", async () => {
+  test("getMyAvatarSignedUrl should return null when avatar does not exist", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = resolveUrl(input);
 
@@ -457,7 +462,7 @@ describe("auth-client", () => {
         return jsonResponse({ message: "User has no avatar" }, 404);
       }
 
-      throw new Error(`URL inesperada: ${url}`);
+      throw new Error(`Unexpected URL: ${url}`);
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -465,5 +470,79 @@ describe("auth-client", () => {
 
     const avatarUrl = await client.getMyAvatarSignedUrl();
     expect(avatarUrl).toBeNull();
+  });
+
+  test("uploadAvatar should succeed for valid file and response payload", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = resolveUrl(input);
+
+      if (url === `${API_URL}/auth/login`) {
+        return jsonResponse({
+          accessToken: "access-token-login",
+          user: {
+            id: "user-1",
+            name: "User One",
+            email: "user@example.com"
+          }
+        });
+      }
+
+      if (url === `${API_URL}/users/me` && init?.method !== "PUT") {
+        return jsonResponse(profilePayload());
+      }
+
+      if (url === `${API_URL}/users/me/avatar` && init?.method === "PUT") {
+        expect(readHeader(init.headers, "Authorization")).toBe("Bearer access-token-login");
+        return jsonResponse({ message: "Avatar updated successfully" });
+      }
+
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const client = await loadClient();
+
+    await client.login({ email: "user@example.com", password: "12345678" });
+
+    const validSmallFile = new File([new Uint8Array(64)], "avatar.png", { type: "image/png" });
+    const result = await client.uploadAvatar(validSmallFile);
+
+    expect(result.message).toBe("Avatar updated successfully");
+  });
+
+  test("getMyAvatarSignedUrl should return URL and reject invalid payload", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = resolveUrl(input);
+
+      if (url === `${API_URL}/auth/refresh`) {
+        return jsonResponse({ accessToken: "access-token-refresh" });
+      }
+
+      if (url === `${API_URL}/users/me`) {
+        return jsonResponse(profilePayload());
+      }
+
+      if (url === `${API_URL}/users/me/avatar-url`) {
+        return jsonResponse({ url: "https://cdn.example.com/avatar.png" });
+      }
+
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const client = await loadClient();
+
+    const avatarUrl = await client.getMyAvatarSignedUrl();
+    expect(avatarUrl).toBe("https://cdn.example.com/avatar.png");
+
+    fetchMock.mockImplementationOnce(async (input: RequestInfo | URL) => {
+      const url = resolveUrl(input);
+      if (url === `${API_URL}/users/me/avatar-url`) {
+        return jsonResponse({ url: "" });
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    await expect(client.getMyAvatarSignedUrl()).rejects.toThrow("Invalid avatar URL response");
   });
 });

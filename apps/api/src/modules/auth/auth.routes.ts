@@ -66,45 +66,56 @@ const authRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
     async (request, reply) => {
       const session = await registerUser(app, env, request.body);
       setRefreshTokenCookie(reply, session.refreshToken, env);
-      request.log.info({ event: "auth.register", userId: session.response.user.id }, "user registered");
+      request.log.info(
+        { event: "auth.register", userId: session.response.user.id },
+        "user registered"
+      );
       return reply.status(201).send(session.response);
     }
   );
 
-  app.post("/auth/login", {
-    config: {
-      rateLimit: {
-        max: 10,
-        timeWindow: "1 minute"
+  app.post(
+    "/auth/login",
+    {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: "1 minute"
+        }
+      },
+      schema: {
+        tags: ["Auth"],
+        summary: "User login"
       }
     },
-    schema: {
-      tags: ["Auth"],
-      summary: "User login"
+    async (request, reply) => {
+      const session = await loginUser(app, env, request.body);
+      setRefreshTokenCookie(reply, session.refreshToken, env);
+      request.log.info({ event: "auth.login", userId: session.response.user.id }, "user logged in");
+      return reply.send(session.response);
     }
-  }, async (request, reply) => {
-    const session = await loginUser(app, env, request.body);
-    setRefreshTokenCookie(reply, session.refreshToken, env);
-    request.log.info({ event: "auth.login", userId: session.response.user.id }, "user logged in");
-    return reply.send(session.response);
-  });
+  );
 
-  app.post<{ Reply: AccessTokenResponse }>("/auth/refresh", {
-    schema: {
-      tags: ["Auth"],
-      summary: "Renew access token"
-    }
-  }, async (request, reply) => {
-    const refreshToken = request.cookies.refreshToken;
-    if (!refreshToken) {
-      throw new AppError("Missing refresh token", 401);
-    }
+  app.post<{ Reply: AccessTokenResponse }>(
+    "/auth/refresh",
+    {
+      schema: {
+        tags: ["Auth"],
+        summary: "Renew access token"
+      }
+    },
+    async (request, reply) => {
+      const refreshToken = request.cookies.refreshToken;
+      if (!refreshToken) {
+        throw new AppError("Missing refresh token", 401);
+      }
 
-    const session = await refreshSession(app, env, refreshToken);
-    setRefreshTokenCookie(reply, session.refreshToken, env);
-    request.log.info({ event: "auth.refresh" }, "session refreshed");
-    return reply.send(session.response);
-  });
+      const session = await refreshSession(app, env, refreshToken);
+      setRefreshTokenCookie(reply, session.refreshToken, env);
+      request.log.info({ event: "auth.refresh" }, "session refreshed");
+      return reply.send(session.response);
+    }
+  );
 
   app.delete<{ Reply: LogoutResponse }>(
     "/auth/logout",

@@ -10,11 +10,7 @@ import CryptoDetailDialog from "@/components/CryptoDetailDialog.vue";
 import LoadingSkeleton from "@/components/LoadingSkeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useUser } from "@/composables/useUser";
-import {
-  getCryptoDetail,
-  listFavorites,
-  removeFavorite,
-} from "@/services/auth-client";
+import { getCryptoDetail, listFavorites, removeFavorite } from "@/services/auth-client";
 
 const { t } = useI18n();
 const { updateFavorites } = useUser();

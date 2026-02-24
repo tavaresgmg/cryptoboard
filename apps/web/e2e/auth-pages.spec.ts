@@ -5,13 +5,13 @@ test.beforeEach(async ({ page }) => {
     route.fulfill({
       status: 401,
       contentType: "application/json",
-      body: JSON.stringify({ message: "Unauthorized" }),
-    }),
+      body: JSON.stringify({ message: "Unauthorized" })
+    })
   );
 });
 
 test.describe("Auth pages — navigation", () => {
-  test("deve abrir login e navegar para cadastro", async ({ page }) => {
+  test("should open login and navigate to register", async ({ page }) => {
     await page.goto("/login");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -21,7 +21,7 @@ test.describe("Auth pages — navigation", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  test("deve navegar do cadastro de volta ao login", async ({ page }) => {
+  test("should navigate from register back to login", async ({ page }) => {
     await page.goto("/register");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -31,7 +31,7 @@ test.describe("Auth pages — navigation", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  test("deve navegar do login para esqueci senha", async ({ page }) => {
+  test("should navigate from login to forgot-password", async ({ page }) => {
     await page.goto("/login");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -41,7 +41,7 @@ test.describe("Auth pages — navigation", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  test("deve navegar da pagina esqueci senha de volta ao login", async ({ page }) => {
+  test("should navigate from forgot-password back to login", async ({ page }) => {
     await page.goto("/forgot-password");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -51,14 +51,14 @@ test.describe("Auth pages — navigation", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  test("deve carregar pagina de reset password com token via query param", async ({ page }) => {
+  test("should load reset-password page with token query param", async ({ page }) => {
     await page.goto("/reset-password?token=abc123");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.locator("#token")).toHaveValue("abc123");
   });
 
-  test("deve carregar pagina de reset password sem token", async ({ page }) => {
+  test("should load reset-password page without token", async ({ page }) => {
     await page.goto("/reset-password");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -67,7 +67,7 @@ test.describe("Auth pages — navigation", () => {
 });
 
 test.describe("Auth pages — form structure", () => {
-  test("login deve ter campos email e password obrigatorios", async ({ page }) => {
+  test("login should render required email and password fields", async ({ page }) => {
     await page.goto("/login");
 
     const emailInput = page.locator("#email");
@@ -86,7 +86,7 @@ test.describe("Auth pages — form structure", () => {
     await expect(submitButton).toBeEnabled();
   });
 
-  test("register deve ter campos name, email e password obrigatorios", async ({ page }) => {
+  test("register should render required name, email, and password fields", async ({ page }) => {
     await page.goto("/register");
 
     const nameInput = page.locator("#name");
@@ -108,7 +108,7 @@ test.describe("Auth pages — form structure", () => {
     await expect(submitButton).toBeVisible();
   });
 
-  test("forgot password deve ter campo email obrigatorio", async ({ page }) => {
+  test("forgot-password should render required email field", async ({ page }) => {
     await page.goto("/forgot-password");
 
     const emailInput = page.locator("#email");
@@ -122,7 +122,7 @@ test.describe("Auth pages — form structure", () => {
     await expect(submitButton).toBeEnabled();
   });
 
-  test("reset password deve ter campos token e password com botao desabilitado inicialmente", async ({ page }) => {
+  test("reset-password should keep submit disabled until form is valid", async ({ page }) => {
     await page.goto("/reset-password");
 
     const tokenInput = page.locator("#token");
@@ -140,7 +140,9 @@ test.describe("Auth pages — form structure", () => {
     await expect(submitButton).toBeDisabled();
   });
 
-  test("reset password deve habilitar botao quando token e senha validos", async ({ page }) => {
+  test("reset-password should enable submit when token and password are valid", async ({
+    page
+  }) => {
     await page.goto("/reset-password");
 
     const tokenInput = page.locator("#token");

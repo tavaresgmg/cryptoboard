@@ -44,11 +44,25 @@ async function submit() {
       </div>
       <div class="space-y-2">
         <Label for="email">{{ t("common.email") }}</Label>
-        <Input id="email" v-model="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+        <Input
+          id="email"
+          v-model="email"
+          type="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+          required
+        />
       </div>
       <div class="space-y-2">
         <Label for="password">{{ t("common.password") }}</Label>
-        <Input id="password" v-model="password" type="password" autocomplete="new-password" minlength="8" required />
+        <Input
+          id="password"
+          v-model="password"
+          type="password"
+          autocomplete="new-password"
+          minlength="8"
+          required
+        />
       </div>
       <Button type="submit" :disabled="loading" class="w-full">
         {{ loading ? t("common.loading") : t("auth.registerAction") }}

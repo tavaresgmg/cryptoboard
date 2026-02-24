@@ -4,7 +4,7 @@ import { AppError } from "../../lib/app-error.js";
 import type { TokenPayload } from "./auth.tokens.js";
 import { verifyToken } from "./auth.tokens.js";
 
-export interface AuthenticatedRequest extends FastifyRequest {
+interface AuthenticatedRequest extends FastifyRequest {
   authUser: TokenPayload;
 }
 

@@ -187,13 +187,13 @@ function authHeaders(accessToken: string): { authorization: string } {
 function extractRefreshCookie(response: Awaited<ReturnType<FastifyInstance["inject"]>>): string {
   const setCookieHeader = response.headers["set-cookie"];
   if (!setCookieHeader) {
-    throw new Error("Header set-cookie ausente na resposta");
+    throw new Error("Missing set-cookie header in response");
   }
 
   const cookieValue = Array.isArray(setCookieHeader) ? setCookieHeader[0] : setCookieHeader;
   const refreshCookie = cookieValue.split(";")[0];
   if (!refreshCookie.startsWith("refreshToken=")) {
-    throw new Error("Cookie refreshToken ausente");
+    throw new Error("Missing refreshToken cookie");
   }
 
   return refreshCookie;
@@ -201,7 +201,7 @@ function extractRefreshCookie(response: Awaited<ReturnType<FastifyInstance["inje
 
 function extractPathForService(url: string, serviceBaseUrl: string): string {
   if (!url.startsWith(serviceBaseUrl)) {
-    throw new Error(`URL inesperada no fetch stub: ${url}`);
+    throw new Error(`Unexpected URL in fetch stub: ${url}`);
   }
 
   const fullUrl = new URL(url);
@@ -212,7 +212,8 @@ function extractPathForService(url: string, serviceBaseUrl: string): string {
 
 function createCoinPaprikaFetchStub(serviceBaseUrl: string): typeof globalThis.fetch {
   return async (input) => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    const url =
+      typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     const path = extractPathForService(url, serviceBaseUrl);
 
     if (path === "/coins") {
@@ -235,7 +236,7 @@ function createCoinPaprikaFetchStub(serviceBaseUrl: string): typeof globalThis.f
       return ticker ? toJsonResponse(ticker) : toJsonResponse({ error: "not-found" }, 404);
     }
 
-    throw new Error(`Path inesperado no fetch stub: ${path}`);
+    throw new Error(`Unexpected path in fetch stub: ${path}`);
   };
 }
 
@@ -290,7 +291,7 @@ describe("Auth + Crypto + Favorites integration", () => {
     globalThis.fetch = originalFetch;
   });
 
-  test("deve executar fluxo completo de favoritos autenticado", async () => {
+  test("should complete full authenticated favorites flow", async () => {
     const email = `user-${randomUUID()}@example.com`;
     const registerResponse = await app.inject({
       method: "POST",
@@ -366,7 +367,7 @@ describe("Auth + Crypto + Favorites integration", () => {
     });
   });
 
-  test("deve retornar 404 para coin inexistente", async () => {
+  test("should return 404 for unknown coin", async () => {
     const registerResponse = await app.inject({
       method: "POST",
       url: "/auth/register",
@@ -395,7 +396,7 @@ describe("Auth + Crypto + Favorites integration", () => {
     assert.equal(addFavoriteResponse.statusCode, 404);
   });
 
-  test("deve ordenar lista de criptos por variacao 24h quando solicitado", async () => {
+  test("should sort crypto list by 24h change when requested", async () => {
     const registerResponse = await app.inject({
       method: "POST",
       url: "/auth/register",
@@ -422,7 +423,7 @@ describe("Auth + Crypto + Favorites integration", () => {
     );
   });
 
-  test("deve retornar 400 para body JSON vazio no endpoint de favoritos", async () => {
+  test("should return 400 for empty JSON body in favorites endpoint", async () => {
     const registerResponse = await app.inject({
       method: "POST",
       url: "/auth/register",
@@ -446,12 +447,14 @@ describe("Auth + Crypto + Favorites integration", () => {
     });
 
     assert.equal(addFavoriteResponse.statusCode, 400);
-    const errorPayload = parseJson<{ statusCode: number; message: string }>(addFavoriteResponse.body);
+    const errorPayload = parseJson<{ statusCode: number; message: string }>(
+      addFavoriteResponse.body
+    );
     assert.equal(errorPayload.statusCode, 400);
     assert.ok(errorPayload.message.length > 0);
   });
 
-  test("deve renovar sessao com refresh token e invalidar ao fazer logout", async () => {
+  test("should renew session with refresh token and invalidate after logout", async () => {
     const registerResponse = await app.inject({
       method: "POST",
       url: "/auth/register",
@@ -502,7 +505,7 @@ describe("Auth + Crypto + Favorites integration", () => {
     assert.equal(refreshAfterLogoutResponse.statusCode, 401);
   });
 
-  test("deve bloquear rotas protegidas sem access token", async () => {
+  test("should block protected routes without access token", async () => {
     const profileResponse = await app.inject({
       method: "GET",
       url: "/users/me"
@@ -516,7 +519,7 @@ describe("Auth + Crypto + Favorites integration", () => {
     assert.equal(cryptoResponse.statusCode, 401);
   });
 
-  test("deve atualizar perfil do usuario autenticado", async () => {
+  test("should update authenticated user profile", async () => {
     const registerResponse = await app.inject({
       method: "POST",
       url: "/auth/register",
@@ -536,7 +539,7 @@ describe("Auth + Crypto + Favorites integration", () => {
       headers: authHeaders(authPayload.accessToken),
       payload: {
         name: "User Profile Updated",
-        description: "Descricao de teste",
+        description: "Test description",
         preferredCurrency: "BRL"
       }
     });
@@ -556,12 +559,12 @@ describe("Auth + Crypto + Favorites integration", () => {
     }>(meResponse.body);
 
     assert.equal(mePayload.name, "User Profile Updated");
-    assert.equal(mePayload.description, "Descricao de teste");
+    assert.equal(mePayload.description, "Test description");
     assert.equal(mePayload.preferredCurrency, "BRL");
     assert.equal(mePayload.hasAvatar, false);
   });
 
-  test("deve permitir forgot/reset password e bloquear senha antiga", async () => {
+  test("should complete forgot/reset password flow and reject old password", async () => {
     const originalPassword = "12345678";
     const newPassword = "98765432";
     const email = `user-${randomUUID()}@example.com`;
@@ -628,7 +631,7 @@ describe("Auth + Crypto + Favorites integration", () => {
     assert.equal(loginWithNewPassword.statusCode, 200);
   });
 
-  test("deve validar upload de avatar quando arquivo nao for enviado", async () => {
+  test("should validate avatar upload when file is missing", async () => {
     const registerResponse = await app.inject({
       method: "POST",
       url: "/auth/register",
@@ -649,7 +652,7 @@ describe("Auth + Crypto + Favorites integration", () => {
     assert.equal(avatarResponse.statusCode, 400);
   });
 
-  test("deve retornar 404 ao buscar avatar signed URL sem avatar cadastrado", async () => {
+  test("should return 404 when requesting avatar signed URL without avatar", async () => {
     const registerResponse = await app.inject({
       method: "POST",
       url: "/auth/register",

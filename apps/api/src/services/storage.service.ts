@@ -13,12 +13,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { AppEnv } from "../config/env.js";
 import { AppError } from "../lib/app-error.js";
 
-const SUPPORTED_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif"
-]);
+const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 const EXTENSION_BY_MIME: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -72,7 +67,10 @@ class StorageService {
       throw new AppError("Public endpoint not configured", 500);
     }
 
-    const encodedKey = key.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+    const encodedKey = key
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
     const objectPath = this.publicIncludeBucket
       ? `${encodeURIComponent(this.bucket)}/${encodedKey}`
       : encodedKey;
@@ -168,9 +166,7 @@ class StorageService {
           Key: key
         })
       );
-    } catch {
-      // Best-effort deletion — log but don't throw
-    }
+    } catch {}
   }
 
   async getAvatarSignedUrl(key: string): Promise<string> {

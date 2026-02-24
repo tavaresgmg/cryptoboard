@@ -68,7 +68,10 @@ function changeClass(value?: number) {
       </div>
       <div class="flex flex-col items-end gap-1 shrink-0">
         <FavoriteButton :active="isFavorite" @toggle="emit('toggleFavorite', crypto.id)" />
-        <span class="text-sm tabular-nums font-medium" :class="changeClass(crypto.percentChange24h)">
+        <span
+          class="text-sm tabular-nums font-medium"
+          :class="changeClass(crypto.percentChange24h)"
+        >
           {{ formatChange(crypto.percentChange24h) }}
         </span>
       </div>

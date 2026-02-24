@@ -5,43 +5,49 @@ test.beforeEach(async ({ page }) => {
     route.fulfill({
       status: 401,
       contentType: "application/json",
-      body: JSON.stringify({ message: "Unauthorized" }),
-    }),
+      body: JSON.stringify({ message: "Unauthorized" })
+    })
   );
 });
 
 test.describe("Router guards — protected routes redirect to login", () => {
-  test("deve redirecionar / para /login com redirect query param", async ({ page }) => {
+  test("should redirect / to /login with redirect query param", async ({ page }) => {
     await page.goto("/");
 
     await expect(page).toHaveURL(/\/login\?redirect=\//);
     await expect(page.locator("#email")).toBeVisible();
   });
 
-  test("deve redirecionar /favorites para /login com redirect param", async ({ page }) => {
+  test("should redirect /favorites to /login with redirect query param", async ({ page }) => {
     await page.goto("/favorites");
 
     await expect(page).toHaveURL(/\/login\?redirect=\/favorites/);
     await expect(page.locator("#email")).toBeVisible();
   });
 
-  test("deve redirecionar /profile para /login com redirect param", async ({ page }) => {
+  test("should redirect /profile to /login with redirect query param", async ({ page }) => {
     await page.goto("/profile");
 
     await expect(page).toHaveURL(/\/login\?redirect=\/profile/);
     await expect(page.locator("#email")).toBeVisible();
   });
+  test("should redirect /onboarding to /login with redirect query param", async ({ page }) => {
+    await page.goto("/onboarding");
+
+    await expect(page).toHaveURL(/\/login\?redirect=\/onboarding/);
+    await expect(page.locator("#email")).toBeVisible();
+  });
 });
 
-test.describe("404 — pagina nao encontrada", () => {
-  test("deve exibir pagina 404 para rota inexistente", async ({ page }) => {
-    await page.goto("/rota-que-nao-existe");
+test.describe("404 — page not found", () => {
+  test("should render 404 page for unknown routes", async ({ page }) => {
+    await page.goto("/route-that-does-not-exist");
 
     await expect(page.locator("text=404")).toBeVisible();
   });
 
-  test("deve ter link para voltar ao inicio na pagina 404", async ({ page }) => {
-    await page.goto("/pagina-invalida");
+  test("should render link to go back home on 404 page", async ({ page }) => {
+    await page.goto("/invalid-page");
 
     await expect(page.locator("text=404")).toBeVisible();
     const homeLink = page.locator('a[href="/"]');

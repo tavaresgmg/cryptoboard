@@ -21,7 +21,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <Button variant="ghost" size="icon" :aria-label="isDark ? t('common.switchToLight') : t('common.switchToDark')" @click="toggle">
+  <Button
+    variant="ghost"
+    size="icon"
+    :aria-label="isDark ? t('common.switchToLight') : t('common.switchToDark')"
+    @click="toggle"
+  >
     <Sun v-if="isDark" class="size-5" />
     <Moon v-else class="size-5" />
   </Button>
