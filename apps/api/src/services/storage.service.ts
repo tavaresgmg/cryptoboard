@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
@@ -31,6 +32,7 @@ class StorageService {
   private readonly readClient: S3Client;
   private readonly bucket: string;
   private bucketEnsured = false;
+  private bucketFlight: Promise<void> | null = null;
 
   constructor(private readonly env: AppEnv) {
     this.bucket = env.S3_BUCKET;
@@ -61,7 +63,7 @@ class StorageService {
 
   private ensureSupportedMimeType(mimeType: string): void {
     if (!SUPPORTED_IMAGE_TYPES.has(mimeType)) {
-      throw new AppError("Tipo de arquivo nao suportado", 400);
+      throw new AppError("Unsupported file type", 400);
     }
   }
 
@@ -70,6 +72,18 @@ class StorageService {
       return;
     }
 
+    if (this.bucketFlight) {
+      return this.bucketFlight;
+    }
+
+    this.bucketFlight = this.doEnsureBucket().finally(() => {
+      this.bucketFlight = null;
+    });
+
+    return this.bucketFlight;
+  }
+
+  private async doEnsureBucket(): Promise<void> {
     try {
       await this.writeClient.send(
         new HeadBucketCommand({
@@ -87,7 +101,7 @@ class StorageService {
         );
         this.bucketEnsured = true;
       } catch (error) {
-        throw new AppError("Nao foi possivel preparar o bucket de avatar", 502, {
+        throw new AppError("Failed to prepare avatar bucket", 502, {
           cause: error instanceof Error ? error.message : "unknown"
         });
       }
@@ -111,12 +125,25 @@ class StorageService {
         })
       );
     } catch (error) {
-      throw new AppError("Falha ao enviar avatar para storage", 502, {
+      throw new AppError("Failed to upload avatar to storage", 502, {
         cause: error instanceof Error ? error.message : "unknown"
       });
     }
 
     return key;
+  }
+
+  async deleteObject(key: string): Promise<void> {
+    try {
+      await this.writeClient.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: key
+        })
+      );
+    } catch {
+      // Best-effort deletion — log but don't throw
+    }
   }
 
   async getAvatarSignedUrl(key: string): Promise<string> {
@@ -130,7 +157,7 @@ class StorageService {
 
       return getSignedUrl(this.readClient, command, { expiresIn: 15 * 60 });
     } catch (error) {
-      throw new AppError("Falha ao obter URL assinada do avatar", 502, {
+      throw new AppError("Failed to generate avatar signed URL", 502, {
         cause: error instanceof Error ? error.message : "unknown"
       });
     }

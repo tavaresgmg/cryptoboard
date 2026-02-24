@@ -49,6 +49,8 @@ interface CacheEntry<T> {
 
 const COINS_TTL_MS = 5 * 60 * 1000;
 const TICKERS_TTL_MS = 2 * 60 * 1000;
+const NEGATIVE_CACHE_TTL_MS = 10 * 1000;
+const DETAIL_TTL_MS = 60 * 1000;
 
 function createLogoUrl(coinId: string): string {
   return `https://static.coinpaprika.com/coin/${coinId}/logo.png`;
@@ -58,6 +60,11 @@ class CoinPaprikaService {
   private readonly baseUrl: string;
   private coinsCache: CacheEntry<CoinPaprikaCoin[]> | null = null;
   private tickersCache: CacheEntry<Map<string, CoinPaprikaTicker>> | null = null;
+  private coinsFlight: Promise<CoinPaprikaCoin[]> | null = null;
+  private tickersFlight: Promise<Map<string, CoinPaprikaTicker>> | null = null;
+  private coinsNegativeUntil = 0;
+  private tickersNegativeUntil = 0;
+  private detailCache = new Map<string, CacheEntry<CryptoDetail>>();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -67,10 +74,10 @@ class CoinPaprikaService {
     const response = await fetch(`${this.baseUrl}${path}`);
     if (!response.ok) {
       if (response.status === 404) {
-        throw new AppError("Criptomoeda nao encontrada", 404);
+        throw new AppError("Cryptocurrency not found", 404);
       }
 
-      throw new AppError(`Falha ao consumir CoinPaprika (${response.status})`, 502);
+      throw new AppError(`CoinPaprika request failed (${response.status})`, 502);
     }
 
     return (await response.json()) as T;
@@ -82,13 +89,28 @@ class CoinPaprikaService {
       return this.coinsCache.value;
     }
 
-    const coins = await this.fetchJson<CoinPaprikaCoin[]>("/coins");
-    this.coinsCache = {
-      value: coins,
-      expiresAt: now + COINS_TTL_MS
-    };
+    if (this.coinsNegativeUntil > now) {
+      throw new AppError("CoinPaprika request failed (back-off)", 502);
+    }
 
-    return coins;
+    if (this.coinsFlight) {
+      return this.coinsFlight;
+    }
+
+    this.coinsFlight = this.fetchJson<CoinPaprikaCoin[]>("/coins")
+      .then((coins) => {
+        this.coinsCache = { value: coins, expiresAt: Date.now() + COINS_TTL_MS };
+        return coins;
+      })
+      .catch((error) => {
+        this.coinsNegativeUntil = Date.now() + NEGATIVE_CACHE_TTL_MS;
+        throw error;
+      })
+      .finally(() => {
+        this.coinsFlight = null;
+      });
+
+    return this.coinsFlight;
   }
 
   private async getTickersMap(): Promise<Map<string, CoinPaprikaTicker>> {
@@ -97,18 +119,32 @@ class CoinPaprikaService {
       return this.tickersCache.value;
     }
 
-    const tickers = await this.fetchJson<CoinPaprikaTicker[]>("/tickers");
-    const map = new Map<string, CoinPaprikaTicker>();
-    for (const ticker of tickers) {
-      map.set(ticker.id, ticker);
+    if (this.tickersNegativeUntil > now) {
+      throw new AppError("CoinPaprika request failed (back-off)", 502);
     }
 
-    this.tickersCache = {
-      value: map,
-      expiresAt: now + TICKERS_TTL_MS
-    };
+    if (this.tickersFlight) {
+      return this.tickersFlight;
+    }
 
-    return map;
+    this.tickersFlight = this.fetchJson<CoinPaprikaTicker[]>("/tickers")
+      .then((tickers) => {
+        const map = new Map<string, CoinPaprikaTicker>();
+        for (const ticker of tickers) {
+          map.set(ticker.id, ticker);
+        }
+        this.tickersCache = { value: map, expiresAt: Date.now() + TICKERS_TTL_MS };
+        return map;
+      })
+      .catch((error) => {
+        this.tickersNegativeUntil = Date.now() + NEGATIVE_CACHE_TTL_MS;
+        throw error;
+      })
+      .finally(() => {
+        this.tickersFlight = null;
+      });
+
+    return this.tickersFlight;
   }
 
   private mapCoinToListItem(coin: CoinPaprikaCoin, ticker: CoinPaprikaTicker | undefined): CryptoListItem {
@@ -158,12 +194,18 @@ class CoinPaprikaService {
   }
 
   async getById(coinId: string): Promise<CryptoDetail> {
+    const now = Date.now();
+    const cached = this.detailCache.get(coinId);
+    if (cached && cached.expiresAt > now) {
+      return cached.value;
+    }
+
     const [coin, ticker] = await Promise.all([
       this.fetchJson<CoinPaprikaCoinDetails>(`/coins/${coinId}`),
       this.fetchJson<CoinPaprikaTicker>(`/tickers/${coinId}`)
     ]);
 
-    return {
+    const detail: CryptoDetail = {
       id: coin.id,
       name: coin.name,
       symbol: coin.symbol,
@@ -180,6 +222,9 @@ class CoinPaprikaService {
       maxSupply: coin.max_supply ?? undefined,
       logoUrl: createLogoUrl(coin.id)
     };
+
+    this.detailCache.set(coinId, { value: detail, expiresAt: Date.now() + DETAIL_TTL_MS });
+    return detail;
   }
 
   async getByIds(ids: string[]): Promise<CryptoListItem[]> {

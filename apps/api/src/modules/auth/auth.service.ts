@@ -16,7 +16,7 @@ import { randomBytes } from "node:crypto";
 
 import type { AppEnv } from "../../config/env.js";
 import { AppError } from "../../lib/app-error.js";
-import { hashPassword, hashToken, verifyPassword } from "../../lib/security.js";
+import { hashPassword, hashToken, timingSafeCompare, verifyPassword } from "../../lib/security.js";
 import { sendResetPasswordEmail } from "../../services/email.service.js";
 import { userRepository, toAuthUser } from "../user/user.repository.js";
 import { issueSessionTokens, verifyToken } from "./auth.tokens.js";
@@ -33,7 +33,7 @@ async function createSessionForUser(
 ): Promise<AuthResult> {
   const user = await userRepository.findById(userId);
   if (!user) {
-    throw new AppError("Usuario nao encontrado", 404);
+    throw new AppError("User not found", 404);
   }
 
   const { accessToken, refreshToken } = await issueSessionTokens(app, env, {
@@ -62,7 +62,7 @@ export async function registerUser(
 
   const existingUser = await userRepository.findByEmail(parsed.email);
   if (existingUser) {
-    throw new AppError("Email ja cadastrado", 409);
+    throw new AppError("Email already registered", 409);
   }
 
   const passwordHash = await hashPassword(parsed.password);
@@ -76,7 +76,7 @@ export async function registerUser(
   } catch (error) {
     const duplicateKey = typeof error === "object" && error !== null && "code" in error;
     if (duplicateKey && (error as { code?: number }).code === 11000) {
-      throw new AppError("Email ja cadastrado", 409);
+      throw new AppError("Email already registered", 409);
     }
 
     throw error;
@@ -93,12 +93,12 @@ export async function loginUser(
   const parsed: LoginInput = loginInputSchema.parse(input);
   const user = await userRepository.findByEmail(parsed.email);
   if (!user) {
-    throw new AppError("Credenciais invalidas", 401);
+    throw new AppError("Invalid credentials", 401);
   }
 
   const isPasswordValid = await verifyPassword(parsed.password, user.passwordHash);
   if (!isPasswordValid) {
-    throw new AppError("Credenciais invalidas", 401);
+    throw new AppError("Invalid credentials", 401);
   }
 
   return createSessionForUser(app, env, user._id.toString());
@@ -113,20 +113,20 @@ export async function refreshSession(
   try {
     payload = await verifyToken(app, refreshToken);
   } catch {
-    throw new AppError("Refresh token invalido ou expirado", 401);
+    throw new AppError("Invalid or expired refresh token", 401);
   }
 
   if (payload.tokenType !== "refresh") {
-    throw new AppError("Refresh token invalido", 401);
+    throw new AppError("Invalid refresh token", 401);
   }
 
   const user = await userRepository.findById(payload.sub);
   if (!user?.refreshTokenHash) {
-    throw new AppError("Sessao invalida", 401);
+    throw new AppError("Invalid session", 401);
   }
 
-  if (user.refreshTokenHash !== hashToken(refreshToken)) {
-    throw new AppError("Sessao invalida", 401);
+  if (!timingSafeCompare(user.refreshTokenHash, hashToken(refreshToken))) {
+    throw new AppError("Invalid session", 401);
   }
 
   const session = await createSessionForUser(app, env, user._id.toString());
@@ -149,10 +149,10 @@ export async function forgotPassword(
   const parsed: ForgotPasswordInput = forgotPasswordInputSchema.parse(input);
   const user = await userRepository.findByEmail(parsed.email);
 
-  // Sempre devolve mensagem generica para evitar enumeracao de usuarios.
+  // Always return generic message to prevent user enumeration.
   if (!user) {
     return {
-      message: "Se o email existir, enviaremos instrucoes de redefinicao"
+      message: "If the email exists, we will send reset instructions"
     };
   }
 
@@ -164,7 +164,7 @@ export async function forgotPassword(
   await sendResetPasswordEmail(env, { to: user.email, token: resetToken });
 
   return {
-    message: "Se o email existir, enviaremos instrucoes de redefinicao"
+    message: "If the email exists, we will send reset instructions"
   };
 }
 
@@ -174,13 +174,13 @@ export async function resetPassword(input: unknown): Promise<AuthMessageResponse
 
   const user = await userRepository.findByPasswordResetTokenHash(resetTokenHash);
   if (!user) {
-    throw new AppError("Token de redefinicao invalido ou expirado", 400);
+    throw new AppError("Invalid or expired reset token", 400);
   }
 
   const passwordHash = await hashPassword(parsed.password);
   await userRepository.updatePassword(user._id.toString(), passwordHash);
 
   return {
-    message: "Senha redefinida com sucesso"
+    message: "Password reset successfully"
   };
 }

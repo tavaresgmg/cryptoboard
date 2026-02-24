@@ -68,6 +68,39 @@ class UserRepository {
     ).exec();
   }
 
+  async addFavoriteAtomic(
+    userId: string,
+    coinId: string,
+    maxFavorites: number
+  ): Promise<{ user: UserDocument | null; reason?: "duplicate" | "limit" }> {
+    const result = await UserModel.findOneAndUpdate(
+      {
+        _id: userId,
+        favorites: { $ne: coinId },
+        [`favorites.${maxFavorites - 1}`]: { $exists: false }
+      },
+      {
+        $addToSet: { favorites: coinId }
+      },
+      { new: true }
+    ).exec();
+
+    if (result) {
+      return { user: result };
+    }
+
+    const existing = await UserModel.findById(userId).exec();
+    if (!existing) {
+      return { user: null };
+    }
+
+    if (existing.favorites.includes(coinId)) {
+      return { user: existing, reason: "duplicate" };
+    }
+
+    return { user: existing, reason: "limit" };
+  }
+
   async removeFavorite(userId: string, coinId: string): Promise<UserDocument | null> {
     return UserModel.findByIdAndUpdate(
       userId,

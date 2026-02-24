@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   HOST: z.string().default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_ORIGIN: z.string().default("http://localhost:5173"),
@@ -21,8 +22,12 @@ const envSchema = z.object({
   RATE_LIMIT_TIME_WINDOW: z.string().default("1 minute"),
   JWT_SECRET: z
     .string()
-    .min(16, "JWT_SECRET deve ter ao menos 16 caracteres")
-    .default("dev-secret-change-me-please"),
+    .min(16, "JWT_SECRET must be at least 16 characters")
+    .default("dev-secret-change-me-please")
+    .refine(
+      (val) => process.env.NODE_ENV !== "production" || val !== "dev-secret-change-me-please",
+      "JWT_SECRET must be explicitly set in production"
+    ),
   JWT_ACCESS_EXPIRATION: z.string().default("15m"),
   JWT_REFRESH_EXPIRATION: z.string().default("7d")
 });

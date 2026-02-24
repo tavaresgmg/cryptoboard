@@ -4,7 +4,7 @@ import type { HealthResponse } from "@crypto/shared";
 
 const healthSchema = {
   tags: ["Health"],
-  summary: "Health check da API",
+  summary: "API health check",
   response: {
     200: {
       type: "object",

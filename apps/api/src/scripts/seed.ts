@@ -13,7 +13,7 @@ async function run() {
 
     const existing = await UserModel.findOne({ email }).exec();
     if (existing) {
-      console.log(`Seed existente: ${email}`);
+      console.log(`Seed already exists: ${email}`);
       return;
     }
 
@@ -22,20 +22,20 @@ async function run() {
       name: "Demo User",
       email,
       passwordHash,
-      description: "Usuario criado por seed",
+      description: "User created by seed",
       preferredCurrency: "USD",
       favorites: ["btc-bitcoin", "eth-ethereum"]
     });
 
-    console.log("Seed executada com sucesso");
+    console.log("Seed completed successfully");
     console.log(`Email: ${email}`);
-    console.log(`Senha: ${password}`);
+    console.log(`Password: ${password}`);
   } finally {
     await disconnectDatabase();
   }
 }
 
 run().catch((error) => {
-  console.error("Falha ao executar seed", error);
+  console.error("Seed execution failed", error);
   process.exit(1);
 });

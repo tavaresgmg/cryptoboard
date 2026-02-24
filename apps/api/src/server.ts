@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
 
 import type { AppEnv } from "./config/env.js";
@@ -43,8 +44,34 @@ function getClientHttpError(error: unknown): { statusCode: number; name: string;
 }
 
 export async function buildServer(env: AppEnv) {
+  const isTest = env.NODE_ENV === "test";
   const app = Fastify({
-    logger: env.NODE_ENV !== "test"
+    logger: isTest
+      ? false
+      : {
+          level: env.LOG_LEVEL,
+          formatters: {
+            level(label) {
+              return { level: label };
+            }
+          },
+          serializers: {
+            req(request) {
+              return {
+                method: request.method,
+                url: request.url,
+                requestId: request.id
+              };
+            },
+            res(reply) {
+              return {
+                statusCode: reply.statusCode
+              };
+            }
+          }
+        },
+    genReqId: () => randomUUID(),
+    disableRequestLogging: isTest
   });
 
   await registerCors(app, env);
@@ -53,8 +80,9 @@ export async function buildServer(env: AppEnv) {
   await registerUpload(app, env);
   await registerSwagger(app);
 
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {
+      request.log.warn({ event: "validation_error", issues: error.issues }, "request validation failed");
       return reply.status(400).send({
         statusCode: 400,
         error: "Validation Error",
@@ -67,6 +95,9 @@ export async function buildServer(env: AppEnv) {
     }
 
     if (error instanceof AppError) {
+      if (error.statusCode >= 500) {
+        request.log.error({ event: "app_error", statusCode: error.statusCode }, error.message);
+      }
       return reply.status(error.statusCode).send({
         statusCode: error.statusCode,
         error: "App Error",
@@ -84,7 +115,7 @@ export async function buildServer(env: AppEnv) {
       });
     }
 
-    app.log.error(error);
+    request.log.error({ event: "unhandled_error", err: error }, "internal server error");
     return reply.status(500).send({
       statusCode: 500,
       error: "Internal Server Error",

@@ -7,7 +7,7 @@ export async function registerSwagger(app: FastifyInstance): Promise<void> {
     openapi: {
       info: {
         title: "Crypto Dashboard API",
-        description: "API do teste tecnico fullstack",
+        description: "Fullstack technical challenge API",
         version: "0.1.0"
       }
     }

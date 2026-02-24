@@ -70,6 +70,8 @@ const userSchema = new mongoose.Schema<User>(
   }
 );
 
+userSchema.index({ passwordResetTokenHash: 1 }, { sparse: true });
+
 export type UserDocument = mongoose.HydratedDocument<User>;
 
 export const UserModel = mongoose.model<User>("User", userSchema);

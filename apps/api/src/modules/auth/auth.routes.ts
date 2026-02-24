@@ -37,9 +37,15 @@ const authRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
   app.post<{ Body: RegisterInput; Reply: AuthSuccessResponse }>(
     "/auth/register",
     {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: "1 minute"
+        }
+      },
       schema: {
         tags: ["Auth"],
-        summary: "Cadastrar usuario",
+        summary: "Register user",
         body: responseObjectSchema(["name", "email", "password"], {
           name: { type: "string" },
           email: { type: "string", format: "email" },
@@ -60,34 +66,43 @@ const authRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
     async (request, reply) => {
       const session = await registerUser(app, env, request.body);
       setRefreshTokenCookie(reply, session.refreshToken, env);
+      request.log.info({ event: "auth.register", userId: session.response.user.id }, "user registered");
       return reply.status(201).send(session.response);
     }
   );
 
   app.post("/auth/login", {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: "1 minute"
+      }
+    },
     schema: {
       tags: ["Auth"],
-      summary: "Login do usuario"
+      summary: "User login"
     }
   }, async (request, reply) => {
     const session = await loginUser(app, env, request.body);
     setRefreshTokenCookie(reply, session.refreshToken, env);
+    request.log.info({ event: "auth.login", userId: session.response.user.id }, "user logged in");
     return reply.send(session.response);
   });
 
   app.post<{ Reply: AccessTokenResponse }>("/auth/refresh", {
     schema: {
       tags: ["Auth"],
-      summary: "Renovar access token"
+      summary: "Renew access token"
     }
   }, async (request, reply) => {
     const refreshToken = request.cookies.refreshToken;
     if (!refreshToken) {
-      throw new AppError("Refresh token ausente", 401);
+      throw new AppError("Missing refresh token", 401);
     }
 
     const session = await refreshSession(app, env, refreshToken);
     setRefreshTokenCookie(reply, session.refreshToken, env);
+    request.log.info({ event: "auth.refresh" }, "session refreshed");
     return reply.send(session.response);
   });
 
@@ -97,27 +112,35 @@ const authRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
       preHandler: requireAccessToken,
       schema: {
         tags: ["Auth"],
-        summary: "Logout do usuario"
+        summary: "User logout"
       }
     },
     async (request, reply) => {
       const authUser = getAuthUser(request);
       await logoutUser(authUser.sub);
       clearRefreshTokenCookie(reply, env);
-      return reply.send({ message: "Logout realizado com sucesso" });
+      request.log.info({ event: "auth.logout", userId: authUser.sub }, "user logged out");
+      return reply.send({ message: "Logged out successfully" });
     }
   );
 
   app.post<{ Body: ForgotPasswordInput; Reply: AuthMessageResponse }>(
     "/auth/forgot-password",
     {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute"
+        }
+      },
       schema: {
         tags: ["Auth"],
-        summary: "Solicitar redefinicao de senha"
+        summary: "Request password reset"
       }
     },
     async (request, reply) => {
       const payload = await forgotPassword(env, request.body);
+      request.log.info({ event: "auth.forgot_password" }, "password reset requested");
       return reply.send(payload);
     }
   );
@@ -127,11 +150,12 @@ const authRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
     {
       schema: {
         tags: ["Auth"],
-        summary: "Redefinir senha com token"
+        summary: "Reset password with token"
       }
     },
     async (request, reply) => {
       const payload = await resetPassword(request.body);
+      request.log.info({ event: "auth.reset_password" }, "password reset completed");
       return reply.send(payload);
     }
   );

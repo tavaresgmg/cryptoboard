@@ -15,7 +15,7 @@ const cryptoRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) =
       preHandler: requireAccessToken,
       schema: {
         tags: ["Crypto"],
-        summary: "Listar criptomoedas"
+        summary: "List cryptocurrencies"
       }
     },
     async (request, reply) => {
@@ -30,7 +30,7 @@ const cryptoRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) =
       preHandler: requireAccessToken,
       schema: {
         tags: ["Crypto"],
-        summary: "Obter detalhes de uma criptomoeda"
+        summary: "Get cryptocurrency details"
       }
     },
     async (request, reply) => {
