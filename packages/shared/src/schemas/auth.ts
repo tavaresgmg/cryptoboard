@@ -3,16 +3,16 @@ import { z } from "zod";
 import { authUserSchema } from "./user.js";
 
 export const loginInputSchema = z.object({
-  email: z.email("Email invalido"),
-  password: z.string().min(8, "Minimo 8 caracteres")
+  email: z.email("Invalid email"),
+  password: z.string().min(8, "Minimum 8 characters")
 });
 
 export type LoginInput = z.infer<typeof loginInputSchema>;
 
 export const registerInputSchema = z.object({
-  name: z.string().min(2, "Minimo 2 caracteres").max(100, "Maximo 100 caracteres"),
-  email: z.email("Email invalido"),
-  password: z.string().min(8, "Minimo 8 caracteres")
+  name: z.string().min(2, "Minimum 2 characters").max(100, "Maximum 100 characters"),
+  email: z.email("Invalid email"),
+  password: z.string().min(8, "Minimum 8 characters")
 });
 
 export type RegisterInput = z.infer<typeof registerInputSchema>;
@@ -36,14 +36,14 @@ export const logoutResponseSchema = z.object({
 export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
 
 export const forgotPasswordInputSchema = z.object({
-  email: z.email("Email invalido")
+  email: z.email("Invalid email")
 });
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordInputSchema>;
 
 export const resetPasswordInputSchema = z.object({
-  token: z.string().min(1, "Token obrigatorio"),
-  password: z.string().min(8, "Minimo 8 caracteres")
+  token: z.string().min(1, "Token is required"),
+  password: z.string().min(8, "Minimum 8 characters")
 });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;

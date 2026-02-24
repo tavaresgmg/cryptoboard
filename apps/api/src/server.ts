@@ -39,7 +39,7 @@ function getClientHttpError(error: unknown): { statusCode: number; name: string;
   return {
     statusCode,
     name: typeof parsedError.name === "string" ? parsedError.name : "Client Error",
-    message: typeof parsedError.message === "string" ? parsedError.message : "Requisicao invalida"
+    message: typeof parsedError.message === "string" ? parsedError.message : "Invalid request"
   };
 }
 
@@ -86,7 +86,7 @@ export async function buildServer(env: AppEnv) {
       return reply.status(400).send({
         statusCode: 400,
         error: "Validation Error",
-        message: "Dados invalidos",
+        message: "Validation failed",
         issues: error.issues.map((issue) => ({
           path: issue.path,
           message: issue.message
@@ -119,7 +119,7 @@ export async function buildServer(env: AppEnv) {
     return reply.status(500).send({
       statusCode: 500,
       error: "Internal Server Error",
-      message: "Erro interno no servidor"
+      message: "Internal server error"
     });
   });
 
