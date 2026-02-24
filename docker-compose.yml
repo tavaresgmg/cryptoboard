@@ -9,7 +9,8 @@ services:
       PORT: 3000
       WEB_ORIGIN: http://localhost:8080
       WEB_APP_URL: http://localhost:8080
-      MONGODB_URI: mongodb://mongo:27017/erictel
+      MONGODB_URI: mongodb://mongo:27017/cryptoboard
+      COINPAPRIKA_BASE_URL: https://api.coinpaprika.com/v1
       S3_ENDPOINT: http://minio:9000
       S3_PUBLIC_ENDPOINT: http://localhost:9000
       S3_REGION: us-east-1
@@ -17,6 +18,8 @@ services:
       S3_SECRET_KEY: minioadmin
       S3_BUCKET: avatars
       AVATAR_MAX_BYTES: 2097152
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
       RATE_LIMIT_MAX: 200
       RATE_LIMIT_TIME_WINDOW: 1 minute
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please}
