@@ -3,11 +3,11 @@ import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { toast } from "vue-sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { resetPassword } from "@/services/auth-client";
+import AuthLayout from "@/components/AuthLayout.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -34,27 +34,24 @@ async function submit() {
 </script>
 
 <template>
-  <main class="min-h-screen flex items-center justify-center bg-background p-4">
-    <Card class="w-full max-w-md">
-      <CardHeader>
-        <CardTitle class="text-2xl">{{ t("auth.resetTitle") }}</CardTitle>
-        <p class="text-sm text-muted-foreground">{{ t("auth.resetSubtitle") }}</p>
-      </CardHeader>
-      <CardContent>
-        <form class="grid gap-4" @submit.prevent="submit">
-          <div class="grid gap-2">
-            <Label for="token">{{ t("auth.tokenLabel") }}</Label>
-            <Input id="token" v-model="token" type="text" required />
-          </div>
-          <div class="grid gap-2">
-            <Label for="password">{{ t("common.password") }}</Label>
-            <Input id="password" v-model="password" type="password" minlength="8" required />
-          </div>
-          <Button type="submit" :disabled="loading || !canSubmit" class="w-full">
-            {{ loading ? t("common.loading") : t("auth.resetAction") }}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  </main>
+  <AuthLayout>
+    <div class="space-y-2 text-center">
+      <h1 class="text-2xl font-bold tracking-tight">{{ t("auth.resetTitle") }}</h1>
+      <p class="text-sm text-muted-foreground">{{ t("auth.resetSubtitle") }}</p>
+    </div>
+
+    <form class="space-y-4" @submit.prevent="submit">
+      <div class="space-y-2">
+        <Label for="token">{{ t("auth.tokenLabel") }}</Label>
+        <Input id="token" v-model="token" type="text" required />
+      </div>
+      <div class="space-y-2">
+        <Label for="password">{{ t("common.password") }}</Label>
+        <Input id="password" v-model="password" type="password" minlength="8" required />
+      </div>
+      <Button type="submit" :disabled="loading || !canSubmit" class="w-full">
+        {{ loading ? t("common.loading") : t("auth.resetAction") }}
+      </Button>
+    </form>
+  </AuthLayout>
 </template>

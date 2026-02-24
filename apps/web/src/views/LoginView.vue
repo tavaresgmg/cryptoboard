@@ -3,11 +3,11 @@ import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { toast } from "vue-sonner";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { login } from "@/services/auth-client";
+import AuthLayout from "@/components/AuthLayout.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -33,35 +33,33 @@ async function submit() {
 </script>
 
 <template>
-  <main class="min-h-screen flex items-center justify-center bg-background p-4">
-    <Card class="w-full max-w-md">
-      <CardHeader>
-        <CardTitle class="text-2xl">{{ t("auth.loginTitle") }}</CardTitle>
-        <p class="text-sm text-muted-foreground">{{ t("auth.loginSubtitle") }}</p>
-      </CardHeader>
-      <CardContent>
-        <form class="grid gap-4" @submit.prevent="submit">
-          <div class="grid gap-2">
-            <Label for="email">{{ t("common.email") }}</Label>
-            <Input id="email" v-model="email" type="email" autocomplete="email" required />
-          </div>
-          <div class="grid gap-2">
-            <Label for="password">{{ t("common.password") }}</Label>
-            <Input id="password" v-model="password" type="password" autocomplete="current-password" required />
-          </div>
-          <Button type="submit" :disabled="loading" class="w-full">
-            {{ loading ? t("common.loading") : t("auth.loginAction") }}
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter class="flex flex-col gap-2">
-        <RouterLink class="text-sm text-primary hover:underline" to="/register">
-          {{ t("auth.createAccount") }}
-        </RouterLink>
-        <RouterLink class="text-sm text-muted-foreground hover:underline" to="/forgot-password">
-          {{ t("auth.forgotPassword") }}
-        </RouterLink>
-      </CardFooter>
-    </Card>
-  </main>
+  <AuthLayout>
+    <div class="space-y-2 text-center">
+      <h1 class="text-2xl font-bold tracking-tight">{{ t("auth.loginTitle") }}</h1>
+      <p class="text-sm text-muted-foreground">{{ t("auth.loginSubtitle") }}</p>
+    </div>
+
+    <form class="space-y-4" @submit.prevent="submit">
+      <div class="space-y-2">
+        <Label for="email">{{ t("common.email") }}</Label>
+        <Input id="email" v-model="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+      </div>
+      <div class="space-y-2">
+        <Label for="password">{{ t("common.password") }}</Label>
+        <Input id="password" v-model="password" type="password" autocomplete="current-password" required />
+      </div>
+      <Button type="submit" :disabled="loading" class="w-full">
+        {{ loading ? t("common.loading") : t("auth.loginAction") }}
+      </Button>
+    </form>
+
+    <div class="flex flex-col items-center gap-2 text-sm">
+      <RouterLink class="text-primary font-medium hover:underline" to="/register">
+        {{ t("auth.createAccount") }}
+      </RouterLink>
+      <RouterLink class="text-muted-foreground hover:underline" to="/forgot-password">
+        {{ t("auth.forgotPassword") }}
+      </RouterLink>
+    </div>
+  </AuthLayout>
 </template>

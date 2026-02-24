@@ -2,6 +2,7 @@
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { Coins, Heart } from "lucide-vue-next";
+import AppLogo from "@/components/AppLogo.vue";
 import {
   Sidebar,
   SidebarContent,
@@ -34,13 +35,7 @@ function isActive(name: string) {
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" as-child :tooltip="t('nav.appName')">
             <RouterLink to="/">
-              <div class="flex items-center justify-center size-8 rounded-lg bg-primary text-primary-foreground shrink-0">
-                <Coins class="size-4" />
-              </div>
-              <div class="flex flex-col gap-0.5 leading-none">
-                <span class="font-bold text-base">Crypto</span>
-                <span class="text-xs text-muted-foreground">Board</span>
-              </div>
+              <AppLogo size="md" />
             </RouterLink>
           </SidebarMenuButton>
         </SidebarMenuItem>

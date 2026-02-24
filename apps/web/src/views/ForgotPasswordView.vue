@@ -2,11 +2,11 @@
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { toast } from "vue-sonner";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { forgotPassword } from "@/services/auth-client";
+import AuthLayout from "@/components/AuthLayout.vue";
 
 const { t } = useI18n();
 
@@ -27,28 +27,26 @@ async function submit() {
 </script>
 
 <template>
-  <main class="min-h-screen flex items-center justify-center bg-background p-4">
-    <Card class="w-full max-w-md">
-      <CardHeader>
-        <CardTitle class="text-2xl">{{ t("auth.forgotTitle") }}</CardTitle>
-        <p class="text-sm text-muted-foreground">{{ t("auth.forgotSubtitle") }}</p>
-      </CardHeader>
-      <CardContent>
-        <form class="grid gap-4" @submit.prevent="submit">
-          <div class="grid gap-2">
-            <Label for="email">{{ t("common.email") }}</Label>
-            <Input id="email" v-model="email" type="email" autocomplete="email" required />
-          </div>
-          <Button type="submit" :disabled="loading" class="w-full">
-            {{ loading ? t("common.loading") : t("auth.forgotAction") }}
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter>
-        <RouterLink class="text-sm text-muted-foreground hover:underline" to="/login">
-          {{ t("common.backToLogin") }}
-        </RouterLink>
-      </CardFooter>
-    </Card>
-  </main>
+  <AuthLayout>
+    <div class="space-y-2 text-center">
+      <h1 class="text-2xl font-bold tracking-tight">{{ t("auth.forgotTitle") }}</h1>
+      <p class="text-sm text-muted-foreground">{{ t("auth.forgotSubtitle") }}</p>
+    </div>
+
+    <form class="space-y-4" @submit.prevent="submit">
+      <div class="space-y-2">
+        <Label for="email">{{ t("common.email") }}</Label>
+        <Input id="email" v-model="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+      </div>
+      <Button type="submit" :disabled="loading" class="w-full">
+        {{ loading ? t("common.loading") : t("auth.forgotAction") }}
+      </Button>
+    </form>
+
+    <div class="text-center">
+      <RouterLink class="text-sm text-muted-foreground hover:underline" to="/login">
+        {{ t("common.backToLogin") }}
+      </RouterLink>
+    </div>
+  </AuthLayout>
 </template>

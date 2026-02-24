@@ -14,54 +14,54 @@ test.describe("Auth pages — navigation", () => {
   test("deve abrir login e navegar para cadastro", async ({ page }) => {
     await page.goto("/login");
 
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.locator('a[href="/register"]').click();
 
     await expect(page).toHaveURL(/\/register$/);
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
   test("deve navegar do cadastro de volta ao login", async ({ page }) => {
     await page.goto("/register");
 
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.locator('a[href="/login"]').click();
 
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
   test("deve navegar do login para esqueci senha", async ({ page }) => {
     await page.goto("/login");
 
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.locator('a[href="/forgot-password"]').click();
 
     await expect(page).toHaveURL(/\/forgot-password$/);
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
   test("deve navegar da pagina esqueci senha de volta ao login", async ({ page }) => {
     await page.goto("/forgot-password");
 
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await page.locator('a[href="/login"]').click();
 
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
   test("deve carregar pagina de reset password com token via query param", async ({ page }) => {
     await page.goto("/reset-password?token=abc123");
 
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.locator("#token")).toHaveValue("abc123");
   });
 
   test("deve carregar pagina de reset password sem token", async ({ page }) => {
     await page.goto("/reset-password");
 
-    await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.locator("#token")).toHaveValue("");
   });
 });
