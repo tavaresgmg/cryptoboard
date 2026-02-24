@@ -39,6 +39,9 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         VITE_API_URL: /api
+    environment:
+      PORT: 80
+      API_PROXY_TARGET: http://api:3000
     ports:
       - "8080:80"
     depends_on:

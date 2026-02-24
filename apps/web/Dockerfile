@@ -19,8 +19,11 @@ RUN pnpm --filter @crypto/shared build && pnpm --filter web build
 FROM nginx:1.27-alpine
 
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
+
+ENV PORT=80
+ENV API_PROXY_TARGET=http://api:3000
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/bin/sh", "-c", "envsubst '${PORT} ${API_PROXY_TARGET}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]

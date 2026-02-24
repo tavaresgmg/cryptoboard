@@ -4,6 +4,8 @@ Fullstack cryptocurrency dashboard — **Vue 3 + Fastify + MongoDB + TypeScript*
 
 > Technical challenge for Erictel.
 
+**Live demo:** [cryptoboard-web-577076650590.us-central1.run.app](https://cryptoboard-web-577076650590.us-central1.run.app)
+
 ---
 
 ## Stack
