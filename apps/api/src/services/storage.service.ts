@@ -30,12 +30,18 @@ const EXTENSION_BY_MIME: Record<string, string> = {
 class StorageService {
   private readonly writeClient: S3Client;
   private readonly readClient: S3Client;
+  private readonly publicEndpoint: URL | null;
   private readonly bucket: string;
+  private readonly publicSignedUrls: boolean;
+  private readonly publicIncludeBucket: boolean;
   private bucketEnsured = false;
   private bucketFlight: Promise<void> | null = null;
 
   constructor(private readonly env: AppEnv) {
     this.bucket = env.S3_BUCKET;
+    this.publicEndpoint = env.S3_PUBLIC_ENDPOINT ? new URL(env.S3_PUBLIC_ENDPOINT) : null;
+    this.publicSignedUrls = env.S3_PUBLIC_SIGNED_URLS;
+    this.publicIncludeBucket = env.S3_PUBLIC_INCLUDE_BUCKET;
 
     this.writeClient = new S3Client({
       region: env.S3_REGION,
@@ -59,6 +65,27 @@ class StorageService {
             }
           })
         : this.writeClient;
+  }
+
+  private buildPublicObjectUrl(key: string): string {
+    if (!this.publicEndpoint) {
+      throw new AppError("Public endpoint not configured", 500);
+    }
+
+    const encodedKey = key.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+    const objectPath = this.publicIncludeBucket
+      ? `${encodeURIComponent(this.bucket)}/${encodedKey}`
+      : encodedKey;
+
+    const url = new URL(this.publicEndpoint.toString());
+    const basePath = url.pathname.replace(/\/+$/, "");
+    const normalizedPath = [basePath, objectPath].filter(Boolean).join("/");
+
+    url.pathname = normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`;
+    url.search = "";
+    url.hash = "";
+
+    return url.toString();
   }
 
   private ensureSupportedMimeType(mimeType: string): void {
@@ -148,6 +175,10 @@ class StorageService {
 
   async getAvatarSignedUrl(key: string): Promise<string> {
     await this.ensureBucket();
+
+    if (this.publicEndpoint && !this.publicSignedUrls) {
+      return this.buildPublicObjectUrl(key);
+    }
 
     try {
       const command = new GetObjectCommand({

@@ -35,6 +35,8 @@ const envSchema = z.object({
   COINPAPRIKA_BASE_URL: z.url().default("https://api.coinpaprika.com/v1"),
   S3_ENDPOINT: z.url().default("http://localhost:9000"),
   S3_PUBLIC_ENDPOINT: z.url().optional(),
+  S3_PUBLIC_SIGNED_URLS: booleanFromEnv.default(true),
+  S3_PUBLIC_INCLUDE_BUCKET: booleanFromEnv.default(true),
   S3_REGION: z.string().default("us-east-1"),
   S3_ACCESS_KEY: z.string().default("minioadmin"),
   S3_SECRET_KEY: z.string().default("minioadmin"),

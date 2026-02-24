@@ -30,6 +30,11 @@ export function createAppRouter(history?: RouterHistory) {
             name: "profile",
             component: () => import("@/views/ProfileView.vue"),
           },
+          {
+            path: "onboarding",
+            name: "onboarding",
+            component: () => import("@/views/OnboardingView.vue"),
+          },
         ],
       },
       {

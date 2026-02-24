@@ -33,8 +33,8 @@ const avatarSrc = ref<string | undefined>(undefined);
 const savingProfile = ref(false);
 const uploadingAvatar = ref(false);
 
-async function loadAvatar() {
-  if (!user.value?.hasAvatar) {
+async function loadAvatar(force = false) {
+  if (!force && !user.value?.hasAvatar) {
     avatarSrc.value = undefined;
     return;
   }
@@ -85,8 +85,20 @@ async function submitAvatar() {
   uploadingAvatar.value = true;
   try {
     await uploadAvatar(avatarFile.value);
-    toast.success(t("profile.avatarUpdated"));
+
+    if (user.value && !user.value.hasAvatar) {
+      setUser({
+        ...user.value,
+        favorites: [...user.value.favorites],
+        hasAvatar: true,
+      });
+    }
+
+    await loadAvatar(true);
     await loadUser();
+    avatarFile.value = null;
+
+    toast.success(t("profile.avatarUpdated"));
   } catch (err) {
     toast.error(err instanceof Error ? err.message : t("common.unexpectedError"));
   } finally {

@@ -21,7 +21,7 @@ async function submit() {
   loading.value = true;
   try {
     await register({ name: name.value, email: email.value, password: password.value });
-    await router.push("/");
+    await router.push({ name: "onboarding" });
   } catch (err) {
     toast.error(err instanceof Error ? err.message : t("common.unexpectedError"));
   } finally {
