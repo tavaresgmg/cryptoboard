@@ -17,6 +17,7 @@ Fullstack cryptocurrency dashboard — **Vue 3 + Fastify + MongoDB + TypeScript*
 | Database | MongoDB (Atlas M0)                                   |
 | Storage  | MinIO (local) / Cloudflare R2 (prod) — S3-compatible |
 | Tests    | Vitest, Playwright, node:test                        |
+| CI       | GitHub Actions (lint → typecheck → test → build)     |
 | Infra    | Docker Compose, GCP Cloud Run                        |
 | External | [CoinPaprika](https://api.coinpaprika.com/) (free)   |
 
@@ -40,35 +41,33 @@ Fullstack cryptocurrency dashboard — **Vue 3 + Fastify + MongoDB + TypeScript*
 ```bash
 git clone https://github.com/tavaresgmg/cryptoboard.git
 cd cryptoboard
+cp .env.example .env
+docker-compose up --build   # api :3000, web :8080, mongo :27017, minio :9000
+```
+
+Seed a test user and try immediately:
+
+```bash
+docker exec -it $(docker ps -qf name=api) node apps/api/dist/seed.js
+# login: seed@crypto.dev / Seed1234
+```
+
+Or run without Docker (requires local MongoDB):
+
+```bash
 pnpm install
-cp .env.example .env   # edit as needed
+pnpm --filter api dev    # http://localhost:3000 (Swagger at /docs)
+pnpm --filter web dev    # http://localhost:5173
 ```
-
-### Development (2 terminals)
-
-```bash
-pnpm --filter api dev   # http://localhost:3000 (Swagger at /docs)
-pnpm --filter web dev   # http://localhost:5173
-```
-
-### Docker
-
-```bash
-docker-compose up --build
-```
-
-Starts: **api** (:3000), **web** (:8080), **mongo** (:27017), **minio** (:9000, console :9001).
 
 ---
 
 ## Scripts
 
 ```bash
-pnpm --filter api dev         # API dev (hot reload)
-pnpm --filter web dev         # Frontend dev
-pnpm --filter api test        # API integration tests
-pnpm --filter web test        # Frontend unit tests
-pnpm --filter web test:e2e    # E2E (Playwright)
+pnpm --filter api test        # API integration tests (8)
+pnpm --filter web test        # Frontend unit tests (14)
+pnpm --filter web test:e2e    # E2E — Playwright (16)
 pnpm --filter api seed        # Seed test user + favorites
 pnpm lint                     # Lint monorepo
 pnpm typecheck                # Typecheck monorepo
@@ -77,6 +76,8 @@ pnpm typecheck                # Typecheck monorepo
 ---
 
 ## API Routes
+
+16 endpoints — full docs at Swagger UI (`/docs`).
 
 | Method | Route                         | Description               | Auth   |
 | ------ | ----------------------------- | ------------------------- | ------ |
@@ -101,7 +102,7 @@ pnpm typecheck                # Typecheck monorepo
 
 ## Project Structure
 
-```
+```text
 ├── apps/
 │   ├── api/          # Fastify backend
 │   └── web/          # Vue 3 frontend
@@ -125,12 +126,4 @@ Nginx in the web container proxies `/api/*` to the API service (same-origin — 
 
 ---
 
-## Engineering Notes
-
 Tradeoffs, security posture, and honest self-assessment: [`NOTES.md`](NOTES.md).
-
----
-
-## License
-
-Developed as a technical challenge. For evaluation purposes only.
