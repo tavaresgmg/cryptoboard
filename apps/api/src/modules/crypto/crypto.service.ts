@@ -48,6 +48,25 @@ interface CacheEntry<T> {
   value: T;
 }
 
+interface CoinListRecord {
+  coin: CoinPaprikaCoin;
+  ticker: CoinPaprikaTicker | undefined;
+  nameLower: string;
+  symbolLower: string;
+}
+
+interface ListSnapshot {
+  coinsRef: CoinPaprikaCoin[];
+  tickersRef: Map<string, CoinPaprikaTicker>;
+  records: CoinListRecord[];
+  sortedBy: Map<ListCryptoSort, CoinListRecord[]>;
+}
+
+interface CoinByIdSnapshot {
+  coinsRef: CoinPaprikaCoin[];
+  value: Map<string, CoinPaprikaCoin>;
+}
+
 const COINS_TTL_MS = 5 * 60 * 1000;
 const TICKERS_TTL_MS = 2 * 60 * 1000;
 const NEGATIVE_CACHE_TTL_MS = 10 * 1000;
@@ -93,6 +112,8 @@ class CoinPaprikaService {
   private coinsNegativeUntil = 0;
   private tickersNegativeUntil = 0;
   private detailCache = new Map<string, CacheEntry<CryptoDetail>>();
+  private listSnapshot: ListSnapshot | null = null;
+  private coinByIdSnapshot: CoinByIdSnapshot | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -111,20 +132,7 @@ class CoinPaprikaService {
     return (await response.json()) as T;
   }
 
-  private async getCoins(): Promise<CoinPaprikaCoin[]> {
-    const now = Date.now();
-    if (this.coinsCache && this.coinsCache.expiresAt > now) {
-      return this.coinsCache.value;
-    }
-
-    if (this.coinsNegativeUntil > now) {
-      throw new AppError("CoinPaprika request failed (back-off)", 502);
-    }
-
-    if (this.coinsFlight) {
-      return this.coinsFlight;
-    }
-
+  private refreshCoins(): Promise<CoinPaprikaCoin[]> {
     this.coinsFlight = this.fetchJson<CoinPaprikaCoin[]>("/coins")
       .then((coins) => {
         this.coinsCache = { value: coins, expiresAt: Date.now() + COINS_TTL_MS };
@@ -141,20 +149,31 @@ class CoinPaprikaService {
     return this.coinsFlight;
   }
 
-  private async getTickersMap(): Promise<Map<string, CoinPaprikaTicker>> {
+  private async getCoins(): Promise<CoinPaprikaCoin[]> {
     const now = Date.now();
-    if (this.tickersCache && this.tickersCache.expiresAt > now) {
-      return this.tickersCache.value;
+    if (this.coinsCache && this.coinsCache.expiresAt > now) {
+      return this.coinsCache.value;
     }
 
-    if (this.tickersNegativeUntil > now) {
+    if (this.coinsCache) {
+      if (!this.coinsFlight && this.coinsNegativeUntil <= now) {
+        void this.refreshCoins();
+      }
+      return this.coinsCache.value;
+    }
+
+    if (this.coinsNegativeUntil > now) {
       throw new AppError("CoinPaprika request failed (back-off)", 502);
     }
 
-    if (this.tickersFlight) {
-      return this.tickersFlight;
+    if (this.coinsFlight) {
+      return this.coinsFlight;
     }
 
+    return this.refreshCoins();
+  }
+
+  private refreshTickersMap(): Promise<Map<string, CoinPaprikaTicker>> {
     this.tickersFlight = this.fetchJson<CoinPaprikaTicker[]>("/tickers")
       .then((tickers) => {
         const map = new Map<string, CoinPaprikaTicker>();
@@ -175,7 +194,89 @@ class CoinPaprikaService {
     return this.tickersFlight;
   }
 
-  private mapCoinToListItem(coin: CoinPaprikaCoin, ticker: CoinPaprikaTicker | undefined): CryptoListItem {
+  private async getTickersMap(): Promise<Map<string, CoinPaprikaTicker>> {
+    const now = Date.now();
+    if (this.tickersCache && this.tickersCache.expiresAt > now) {
+      return this.tickersCache.value;
+    }
+
+    if (this.tickersCache) {
+      if (!this.tickersFlight && this.tickersNegativeUntil <= now) {
+        void this.refreshTickersMap();
+      }
+      return this.tickersCache.value;
+    }
+
+    if (this.tickersNegativeUntil > now) {
+      throw new AppError("CoinPaprika request failed (back-off)", 502);
+    }
+
+    if (this.tickersFlight) {
+      return this.tickersFlight;
+    }
+
+    return this.refreshTickersMap();
+  }
+
+  private getListSnapshot(
+    coins: CoinPaprikaCoin[],
+    tickersMap: Map<string, CoinPaprikaTicker>
+  ): ListSnapshot {
+    if (
+      this.listSnapshot &&
+      this.listSnapshot.coinsRef === coins &&
+      this.listSnapshot.tickersRef === tickersMap
+    ) {
+      return this.listSnapshot;
+    }
+
+    const records = coins.map((coin) => ({
+      coin,
+      ticker: tickersMap.get(coin.id),
+      nameLower: coin.name.toLowerCase(),
+      symbolLower: coin.symbol.toLowerCase()
+    }));
+
+    this.listSnapshot = {
+      coinsRef: coins,
+      tickersRef: tickersMap,
+      records,
+      sortedBy: new Map<ListCryptoSort, CoinListRecord[]>()
+    };
+
+    return this.listSnapshot;
+  }
+
+  private getSortedRecords(snapshot: ListSnapshot, sort: ListCryptoSort): CoinListRecord[] {
+    const cached = snapshot.sortedBy.get(sort);
+    if (cached) {
+      return cached;
+    }
+
+    const sorted = [...snapshot.records].sort((left, right) =>
+      this.compareRecords(left, right, sort)
+    );
+    snapshot.sortedBy.set(sort, sorted);
+    return sorted;
+  }
+
+  private getCoinByIdMap(coins: CoinPaprikaCoin[]): Map<string, CoinPaprikaCoin> {
+    if (this.coinByIdSnapshot && this.coinByIdSnapshot.coinsRef === coins) {
+      return this.coinByIdSnapshot.value;
+    }
+
+    const value = new Map(coins.map((coin) => [coin.id, coin]));
+    this.coinByIdSnapshot = {
+      coinsRef: coins,
+      value
+    };
+    return value;
+  }
+
+  private mapCoinToListItem(
+    coin: CoinPaprikaCoin,
+    ticker: CoinPaprikaTicker | undefined
+  ): CryptoListItem {
     return {
       id: coin.id,
       name: coin.name,
@@ -188,17 +289,19 @@ class CoinPaprikaService {
     };
   }
 
-  private compareCoins(
-    left: CoinPaprikaCoin,
-    right: CoinPaprikaCoin,
-    tickersMap: Map<string, CoinPaprikaTicker>,
+  private compareRecords(
+    left: CoinListRecord,
+    right: CoinListRecord,
     sort: ListCryptoSort
   ): number {
-    const leftTicker = tickersMap.get(left.id);
-    const rightTicker = tickersMap.get(right.id);
+    const leftCoin = left.coin;
+    const rightCoin = right.coin;
+    const leftTicker = left.ticker;
+    const rightTicker = right.ticker;
 
-    const byRank = compareNullableNumber(left.rank, right.rank, "asc");
-    const byNameAsc = left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+    const byRank = compareNullableNumber(leftCoin.rank, rightCoin.rank, "asc");
+    const byNameAsc =
+      left.nameLower < right.nameLower ? -1 : left.nameLower > right.nameLower ? 1 : 0;
 
     switch (sort) {
       case "price_desc": {
@@ -243,13 +346,20 @@ class CoinPaprikaService {
     }
   }
 
+  async warmup(): Promise<void> {
+    const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap()]);
+    const snapshot = this.getListSnapshot(coins, tickersMap);
+    this.getSortedRecords(snapshot, "price_desc");
+  }
+
   async list(queryInput: unknown): Promise<CryptoListResponse> {
     const query: ListCryptoQuery = listCryptoQuerySchema.parse(queryInput);
     const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap()]);
-
+    const snapshot = this.getListSnapshot(coins, tickersMap);
+    const sortedRecords = this.getSortedRecords(snapshot, query.sort);
     const searchLower = query.search?.toLowerCase();
-    const filtered = coins.filter((coin) => {
-      if (query.type && coin.type !== query.type) {
+    const filteredRecords = sortedRecords.filter((record) => {
+      if (query.type && record.coin.type !== query.type) {
         return false;
       }
 
@@ -257,21 +367,15 @@ class CoinPaprikaService {
         return true;
       }
 
-      return (
-        coin.name.toLowerCase().includes(searchLower) || coin.symbol.toLowerCase().includes(searchLower)
-      );
+      return record.nameLower.includes(searchLower) || record.symbolLower.includes(searchLower);
     });
 
-    const sorted = [...filtered].sort((left, right) =>
-      this.compareCoins(left, right, tickersMap, query.sort)
-    );
-
-    const total = sorted.length;
+    const total = filteredRecords.length;
     const offset = (query.page - 1) * query.limit;
-    const pageItems = sorted.slice(offset, offset + query.limit);
+    const pageItems = filteredRecords.slice(offset, offset + query.limit);
 
     return {
-      data: pageItems.map((coin) => this.mapCoinToListItem(coin, tickersMap.get(coin.id))),
+      data: pageItems.map((record) => this.mapCoinToListItem(record.coin, record.ticker)),
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -320,7 +424,7 @@ class CoinPaprikaService {
     }
 
     const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap()]);
-    const coinById = new Map(coins.map((coin) => [coin.id, coin]));
+    const coinById = this.getCoinByIdMap(coins);
 
     return ids
       .map((id) => {
@@ -341,7 +445,8 @@ class CoinPaprikaService {
     }
 
     const coins = await this.getCoins();
-    return coins.some((coin) => coin.id === normalized);
+    const coinById = this.getCoinByIdMap(coins);
+    return coinById.has(normalized);
   }
 }
 

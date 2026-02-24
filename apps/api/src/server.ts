@@ -6,6 +6,7 @@ import type { AppEnv } from "./config/env.js";
 import { AppError } from "./lib/app-error.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import cryptoRoutes from "./modules/crypto/crypto.routes.js";
+import { getCoinPaprikaService } from "./modules/crypto/crypto.service.js";
 import healthRoutes from "./modules/health/health.routes.js";
 import userRoutes from "./modules/user/user.routes.js";
 import { registerAuth } from "./plugins/auth.js";
@@ -20,7 +21,9 @@ interface HttpErrorLike {
   message?: unknown;
 }
 
-function getClientHttpError(error: unknown): { statusCode: number; name: string; message: string } | null {
+function getClientHttpError(
+  error: unknown
+): { statusCode: number; name: string; message: string } | null {
   if (!error || typeof error !== "object") {
     return null;
   }
@@ -82,7 +85,10 @@ export async function buildServer(env: AppEnv) {
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {
-      request.log.warn({ event: "validation_error", issues: error.issues }, "request validation failed");
+      request.log.warn(
+        { event: "validation_error", issues: error.issues },
+        "request validation failed"
+      );
       return reply.status(400).send({
         statusCode: 400,
         error: "Validation Error",
@@ -127,6 +133,13 @@ export async function buildServer(env: AppEnv) {
   await app.register(authRoutes, { env });
   await app.register(userRoutes, { env });
   await app.register(cryptoRoutes, { env });
+
+  if (!isTest) {
+    const cryptoService = getCoinPaprikaService(env.COINPAPRIKA_BASE_URL);
+    void cryptoService.warmup().catch((error) => {
+      app.log.warn({ event: "crypto_warmup_failed", err: error }, "crypto warmup failed");
+    });
+  }
 
   return app;
 }
