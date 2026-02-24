@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI: true
+      JWT_SECRET: gha-ci-jwt-secret-please-change-123456
     steps:
       - name: Checkout
         uses: actions/checkout@v4
