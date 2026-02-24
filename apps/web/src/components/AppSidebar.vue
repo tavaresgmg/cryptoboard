@@ -39,7 +39,7 @@ function isActive(name: string) {
               </div>
               <div class="flex flex-col gap-0.5 leading-none">
                 <span class="font-bold text-base">Crypto</span>
-                <span class="text-xs text-muted-foreground">Dashboard</span>
+                <span class="text-xs text-muted-foreground">Board</span>
               </div>
             </RouterLink>
           </SidebarMenuButton>

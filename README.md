@@ -1,4 +1,4 @@
-# Crypto Dashboard — Fullstack App
+# CryptoBoard — Fullstack App
 
 Fullstack application for cryptocurrency viewing and user profile management, built with **Vue 3**, **Fastify**, **MongoDB** and **TypeScript**.
 
@@ -58,8 +58,8 @@ Fullstack application for cryptocurrency viewing and user profile management, bu
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/SEU_USUARIO/crypto-dashboard.git
-cd crypto-dashboard
+git clone https://github.com/tavaresgmg/cryptoboard.git
+cd cryptoboard
 pnpm install
 ```
 

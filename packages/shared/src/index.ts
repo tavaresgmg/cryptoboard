@@ -1,4 +1,4 @@
-export const APP_NAME = "Crypto Dashboard";
+export const APP_NAME = "CryptoBoard";
 
 export const SUPPORTED_LANGUAGES = ["es", "en", "pt-BR"] as const;
 

@@ -2,7 +2,7 @@ import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@crypto/shared";
 import { createI18n } from "vue-i18n";
 import { watch } from "vue";
 
-const LOCALE_STORAGE_KEY = "crypto-dashboard-locale";
+const LOCALE_STORAGE_KEY = "cryptoboard-locale";
 
 const messages = {
   es: {
@@ -35,7 +35,7 @@ const messages = {
       tokenLabel: "Token",
     },
     nav: {
-      appName: "Crypto Dashboard",
+      appName: "CryptoBoard",
       toggleSidebar: "Alternar barra lateral",
       cryptos: "Criptomonedas",
       favorites: "Favoritos",
@@ -129,7 +129,7 @@ const messages = {
       tokenLabel: "Token",
     },
     nav: {
-      appName: "Crypto Dashboard",
+      appName: "CryptoBoard",
       toggleSidebar: "Toggle Sidebar",
       cryptos: "Cryptos",
       favorites: "Favorites",
@@ -223,7 +223,7 @@ const messages = {
       tokenLabel: "Token",
     },
     nav: {
-      appName: "Crypto Dashboard",
+      appName: "CryptoBoard",
       toggleSidebar: "Alternar barra lateral",
       cryptos: "Criptomoedas",
       favorites: "Favoritos",
