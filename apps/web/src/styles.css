@@ -1,259 +1,119 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "vue-sonner/style.css";
 
-:root {
-  --text-color: #102a43;
-  --background-gradient: linear-gradient(145deg, #f0f9ff 0%, #dbeafe 100%);
-  --card-bg: #ffffff;
-  --card-border: #bfdbfe;
-  --panel-bg: #f8fbff;
-  --panel-border: #dbeafe;
-  --input-border: #bfdbfe;
+@custom-variant dark (&:is(.dark *));
 
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: var(--text-color);
-  background: var(--background-gradient);
+@layer base {
+  :root {
+    --background: oklch(0.985 0 0);
+    --foreground: oklch(0.145 0.005 285);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0.005 285);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0.005 285);
+    --primary: oklch(0.723 0.191 149.5);
+    --primary-foreground: oklch(0.145 0.005 285);
+    --secondary: oklch(0.96 0.003 286);
+    --secondary-foreground: oklch(0.205 0.006 286);
+    --muted: oklch(0.96 0.003 286);
+    --muted-foreground: oklch(0.556 0.01 286);
+    --accent: oklch(0.623 0.214 259.1);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.577 0.245 27.3);
+    --destructive-foreground: oklch(0.985 0 0);
+    --positive: oklch(0.792 0.179 151.6);
+    --positive-foreground: oklch(0.145 0.005 285);
+    --border: oklch(0.918 0.005 286);
+    --input: oklch(0.918 0.005 286);
+    --ring: oklch(0.723 0.191 149.5);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.97 0.001 286);
+    --sidebar-foreground: oklch(0.345 0.015 286);
+    --sidebar-primary: oklch(0.723 0.191 149.5);
+    --sidebar-primary-foreground: oklch(0.145 0.005 285);
+    --sidebar-accent: oklch(0.94 0.003 286);
+    --sidebar-accent-foreground: oklch(0.205 0.006 286);
+    --sidebar-border: oklch(0.918 0.005 286);
+    --sidebar-ring: oklch(0.623 0.214 259.1);
+  }
+
+  .dark {
+    --background: oklch(0.145 0.005 285);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.185 0.008 285);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.185 0.008 285);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.723 0.191 149.5);
+    --primary-foreground: oklch(0.145 0.005 285);
+    --secondary: oklch(0.248 0.006 286);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.248 0.006 286);
+    --muted-foreground: oklch(0.708 0.01 286);
+    --accent: oklch(0.623 0.214 259.1);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.166 22.7);
+    --destructive-foreground: oklch(0.985 0 0);
+    --positive: oklch(0.792 0.179 151.6);
+    --positive-foreground: oklch(0.145 0.005 285);
+    --border: oklch(0.278 0.006 286);
+    --input: oklch(0.278 0.006 286);
+    --ring: oklch(0.723 0.191 149.5);
+    --sidebar: oklch(0.165 0.008 285);
+    --sidebar-foreground: oklch(0.92 0.003 286);
+    --sidebar-primary: oklch(0.723 0.191 149.5);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.215 0.008 285);
+    --sidebar-accent-foreground: oklch(0.92 0.003 286);
+    --sidebar-border: oklch(0.248 0.006 286);
+    --sidebar-ring: oklch(0.623 0.214 259.1);
+  }
 }
 
-:root[data-theme="dark"] {
-  --text-color: #dbeafe;
-  --background-gradient: linear-gradient(145deg, #020617 0%, #0f172a 100%);
-  --card-bg: #0b1221;
-  --card-border: #1e293b;
-  --panel-bg: #111827;
-  --panel-border: #334155;
-  --input-border: #334155;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-positive: var(--positive);
+  --color-positive-foreground: var(--positive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  color: var(--text-color);
-  background: var(--background-gradient);
-}
-
-.app-shell {
-  min-height: 100vh;
-}
-
-.topbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-}
-
-.theme-toggle {
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  padding: 0.35rem 0.7rem;
-  background: #ffffff;
-  color: #0f172a;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.locale-switcher {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.locale-switcher select {
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  padding: 0.35rem 0.55rem;
-  background: var(--card-bg);
-  color: var(--text-color);
-  font: inherit;
-}
-
-.container {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-}
-
-.card {
-  width: min(100%, 540px);
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 20px 40px rgba(12, 74, 110, 0.12);
-}
-
-h1 {
-  margin-top: 0;
-  margin-bottom: 0.65rem;
-  font-size: 1.75rem;
-}
-
-p {
-  margin-top: 0;
-}
-
-h2 {
-  margin-top: 0;
-  margin-bottom: 0.35rem;
-  font-size: 1.05rem;
-}
-
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.form {
-  display: grid;
-  gap: 0.8rem;
-  margin-top: 1rem;
-}
-
-.field {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.field span {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.field input {
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  padding: 0.65rem 0.75rem;
-  background: var(--card-bg);
-  color: var(--text-color);
-  font: inherit;
-}
-
-.field select {
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  padding: 0.65rem 0.75rem;
-  background: var(--card-bg);
-  color: var(--text-color);
-  font: inherit;
-}
-
-.field input:focus {
-  outline: 2px solid #7dd3fc;
-  outline-offset: 1px;
-}
-
-.button {
-  border: 0;
-  border-radius: 10px;
-  padding: 0.65rem 1rem;
-  background: #0ea5e9;
-  color: #ffffff;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.button:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-
-.button-secondary {
-  background: #0369a1;
-}
-
-.success {
-  color: #0f766e;
-  margin-bottom: 0;
-}
-
-.error {
-  color: #b91c1c;
-  margin-bottom: 0;
-}
-
-.panel {
-  border: 1px solid var(--panel-border);
-  border-radius: 12px;
-  padding: 0.8rem;
-  margin-top: 0.8rem;
-  background: var(--panel-bg);
-}
-
-.link {
-  color: #0369a1;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.link:hover {
-  text-decoration: underline;
-}
-
-.filters {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.5rem;
-  margin-bottom: 0.8rem;
-}
-
-.filters input,
-.filters select {
-  border: 1px solid var(--input-border);
-  border-radius: 10px;
-  padding: 0.55rem 0.7rem;
-  background: var(--card-bg);
-  color: var(--text-color);
-  font: inherit;
-}
-
-.crypto-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.crypto-item {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid #e0f2fe;
-  border-radius: 10px;
-  padding: 0.55rem;
-}
-
-.link-button {
-  border: 0;
-  background: transparent;
-  color: #0369a1;
-  font-weight: 700;
-  text-align: left;
-  padding: 0;
-  cursor: pointer;
-}
-
-.pagination {
-  margin-top: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-@media (min-width: 640px) {
-  .filters {
-    grid-template-columns: 1fr 140px auto;
+  body {
+    @apply bg-background text-foreground min-h-screen antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

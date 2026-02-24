@@ -2,9 +2,12 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-
-import Button from "../components/ui/Button.vue";
-import { login } from "../services/auth-client";
+import { toast } from "vue-sonner";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { login } from "@/services/auth-client";
 
 const router = useRouter();
 const route = useRoute();
@@ -13,22 +16,16 @@ const { t } = useI18n();
 const email = ref("");
 const password = ref("");
 const loading = ref(false);
-const error = ref<string | null>(null);
 
 async function submit() {
   loading.value = true;
-  error.value = null;
-
   try {
-    await login({
-      email: email.value,
-      password: password.value
-    });
-
-    const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/";
+    await login({ email: email.value, password: password.value });
+    const raw = typeof route.query.redirect === "string" ? route.query.redirect : "/";
+    const redirect = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
     await router.push(redirect);
-  } catch (unknownError) {
-    error.value = unknownError instanceof Error ? unknownError.message : "Erro inesperado";
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : t("common.unexpectedError"));
   } finally {
     loading.value = false;
   }
@@ -36,31 +33,35 @@ async function submit() {
 </script>
 
 <template>
-  <main class="container">
-    <section class="card">
-      <h1>{{ t("auth.loginTitle") }}</h1>
-      <p>{{ t("auth.loginSubtitle") }}</p>
-
-      <form class="form" @submit.prevent="submit">
-        <label class="field">
-          <span>{{ t("common.email") }}</span>
-          <input v-model="email" type="email" autocomplete="email" required />
-        </label>
-
-        <label class="field">
-          <span>{{ t("common.password") }}</span>
-          <input v-model="password" type="password" autocomplete="current-password" required />
-        </label>
-
-        <Button type="submit" :disabled="loading">
-          {{ loading ? `${t("common.loading")}` : t("auth.loginAction") }}
-        </Button>
-      </form>
-
-      <p v-if="error" class="error">{{ error }}</p>
-
-      <RouterLink class="link" to="/register">{{ t("auth.createAccount") }}</RouterLink>
-      <RouterLink class="link" to="/forgot-password">{{ t("auth.forgotPassword") }}</RouterLink>
-    </section>
+  <main class="min-h-screen flex items-center justify-center bg-background p-4">
+    <Card class="w-full max-w-md">
+      <CardHeader>
+        <CardTitle class="text-2xl">{{ t("auth.loginTitle") }}</CardTitle>
+        <p class="text-sm text-muted-foreground">{{ t("auth.loginSubtitle") }}</p>
+      </CardHeader>
+      <CardContent>
+        <form class="grid gap-4" @submit.prevent="submit">
+          <div class="grid gap-2">
+            <Label for="email">{{ t("common.email") }}</Label>
+            <Input id="email" v-model="email" type="email" autocomplete="email" required />
+          </div>
+          <div class="grid gap-2">
+            <Label for="password">{{ t("common.password") }}</Label>
+            <Input id="password" v-model="password" type="password" autocomplete="current-password" required />
+          </div>
+          <Button type="submit" :disabled="loading" class="w-full">
+            {{ loading ? t("common.loading") : t("auth.loginAction") }}
+          </Button>
+        </form>
+      </CardContent>
+      <CardFooter class="flex flex-col gap-2">
+        <RouterLink class="text-sm text-primary hover:underline" to="/register">
+          {{ t("auth.createAccount") }}
+        </RouterLink>
+        <RouterLink class="text-sm text-muted-foreground hover:underline" to="/forgot-password">
+          {{ t("auth.forgotPassword") }}
+        </RouterLink>
+      </CardFooter>
+    </Card>
   </main>
 </template>

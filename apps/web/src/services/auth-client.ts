@@ -33,7 +33,7 @@ import type {
   UserProfile
 } from "@crypto/shared";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "/api";
+export const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 
 let accessToken: string | null = null;
 let currentUser: UserProfile | null = null;
@@ -100,12 +100,20 @@ async function requestWithAuth(
   });
 }
 
-function assertOk(response: Response, fallbackMessage: string): void {
+async function assertOk(response: Response, fallbackMessage: string): Promise<void> {
   if (response.ok) {
     return;
   }
 
-  throw new Error(`${fallbackMessage} (HTTP ${response.status})`);
+  let serverMessage: string | undefined;
+  try {
+    const body = (await response.json()) as { message?: string };
+    serverMessage = body.message;
+  } catch {
+    // response body not JSON — use fallback
+  }
+
+  throw new Error(serverMessage ?? `${fallbackMessage} (HTTP ${response.status})`);
 }
 
 function applyAuthResponse(payload: AuthSuccessResponse): void {
@@ -130,7 +138,7 @@ export async function login(input: LoginInput): Promise<UserProfile> {
     credentials: "include",
     body: JSON.stringify(body)
   });
-  assertOk(response, "Falha no login");
+  await assertOk(response, "Login failed");
 
   const payload = authSuccessResponseSchema.parse(await parseJson(response));
   applyAuthResponse(payload);
@@ -147,7 +155,7 @@ export async function register(input: RegisterInput): Promise<UserProfile> {
     credentials: "include",
     body: JSON.stringify(body)
   });
-  assertOk(response, "Falha no cadastro");
+  await assertOk(response, "Registration failed");
 
   const payload = authSuccessResponseSchema.parse(await parseJson(response));
   applyAuthResponse(payload);
@@ -197,7 +205,7 @@ export async function ensureSession(): Promise<boolean> {
 
 export async function fetchMe(): Promise<UserProfile> {
   const response = await requestWithAuth("/users/me");
-  assertOk(response, "Falha ao carregar perfil");
+  await assertOk(response, "Failed to load profile");
 
   const payload = userProfileSchema.parse(await parseJson(response));
   currentUser = payload;
@@ -235,7 +243,7 @@ export async function listCryptos(
   const suffix = params.toString();
   const path = suffix.length > 0 ? `/crypto?${suffix}` : "/crypto";
   const response = await requestWithAuth(path);
-  assertOk(response, "Falha ao carregar criptomoedas");
+  await assertOk(response, "Failed to load cryptocurrencies");
 
   return cryptoListResponseSchema.parse(await parseJson(response));
 }
@@ -243,24 +251,24 @@ export async function listCryptos(
 export async function getCryptoDetail(coinId: string): Promise<CryptoDetail> {
   const normalizedCoinId = coinId.trim();
   if (!normalizedCoinId) {
-    throw new Error("CoinId invalido");
+    throw new Error("Invalid CoinId");
   }
 
   const response = await requestWithAuth(`/crypto/${encodeURIComponent(normalizedCoinId)}`);
-  assertOk(response, "Falha ao carregar detalhes da criptomoeda");
+  await assertOk(response, "Failed to load crypto details");
   return cryptoDetailSchema.parse(await parseJson(response));
 }
 
 export async function addFavorite(coinId: string): Promise<FavoritesResponse> {
   const normalizedCoinId = coinId.trim();
   if (!normalizedCoinId) {
-    throw new Error("CoinId invalido");
+    throw new Error("Invalid CoinId");
   }
 
   const response = await requestWithAuth(`/users/me/favorites/${encodeURIComponent(normalizedCoinId)}`, {
     method: "POST"
   });
-  assertOk(response, "Falha ao adicionar favorito");
+  await assertOk(response, "Failed to add favorite");
 
   return favoritesResponseSchema.parse(await parseJson(response));
 }
@@ -268,20 +276,20 @@ export async function addFavorite(coinId: string): Promise<FavoritesResponse> {
 export async function removeFavorite(coinId: string): Promise<FavoritesResponse> {
   const normalizedCoinId = coinId.trim();
   if (!normalizedCoinId) {
-    throw new Error("CoinId invalido");
+    throw new Error("Invalid CoinId");
   }
 
   const response = await requestWithAuth(`/users/me/favorites/${encodeURIComponent(normalizedCoinId)}`, {
     method: "DELETE"
   });
-  assertOk(response, "Falha ao remover favorito");
+  await assertOk(response, "Failed to remove favorite");
 
   return favoritesResponseSchema.parse(await parseJson(response));
 }
 
 export async function listFavorites(): Promise<FavoriteListResponse> {
   const response = await requestWithAuth("/users/me/favorites");
-  assertOk(response, "Falha ao listar favoritos");
+  await assertOk(response, "Failed to load favorites");
   return favoriteListResponseSchema.parse(await parseJson(response));
 }
 
@@ -294,7 +302,7 @@ export async function forgotPassword(input: ForgotPasswordInput): Promise<AuthMe
     },
     body: JSON.stringify(body)
   });
-  assertOk(response, "Falha ao solicitar redefinicao de senha");
+  await assertOk(response, "Failed to request password reset");
   return authMessageResponseSchema.parse(await parseJson(response));
 }
 
@@ -307,7 +315,7 @@ export async function resetPassword(input: ResetPasswordInput): Promise<AuthMess
     },
     body: JSON.stringify(body)
   });
-  assertOk(response, "Falha ao redefinir senha");
+  await assertOk(response, "Failed to reset password");
   return authMessageResponseSchema.parse(await parseJson(response));
 }
 
@@ -317,7 +325,7 @@ export async function updateMyProfile(input: UpdateUserProfileInput): Promise<Us
     method: "PUT",
     body: JSON.stringify(body)
   });
-  assertOk(response, "Falha ao atualizar perfil");
+  await assertOk(response, "Failed to update profile");
 
   const payload = userProfileSchema.parse(await parseJson(response));
   currentUser = payload;
@@ -332,6 +340,6 @@ export async function uploadAvatar(file: File): Promise<AvatarUpdateResponse> {
     method: "PUT",
     body: formData
   });
-  assertOk(response, "Falha ao enviar avatar");
+  await assertOk(response, "Failed to upload avatar");
   return avatarUpdateResponseSchema.parse(await parseJson(response));
 }
