@@ -2,6 +2,7 @@ import type {
   CryptoDetail,
   CryptoListItem,
   CryptoListResponse,
+  ListCryptoSort,
   ListCryptoQuery
 } from "@crypto/shared";
 import { listCryptoQuerySchema } from "@crypto/shared";
@@ -54,6 +55,33 @@ const DETAIL_TTL_MS = 60 * 1000;
 
 function createLogoUrl(coinId: string): string {
   return `https://static.coinpaprika.com/coin/${coinId}/logo.png`;
+}
+
+function sanitizeNumber(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function compareNullableNumber(
+  left: number | null | undefined,
+  right: number | null | undefined,
+  direction: "asc" | "desc"
+): number {
+  const a = sanitizeNumber(left);
+  const b = sanitizeNumber(right);
+
+  if (a === null && b === null) {
+    return 0;
+  }
+
+  if (a === null) {
+    return 1;
+  }
+
+  if (b === null) {
+    return -1;
+  }
+
+  return direction === "asc" ? a - b : b - a;
 }
 
 class CoinPaprikaService {
@@ -160,6 +188,61 @@ class CoinPaprikaService {
     };
   }
 
+  private compareCoins(
+    left: CoinPaprikaCoin,
+    right: CoinPaprikaCoin,
+    tickersMap: Map<string, CoinPaprikaTicker>,
+    sort: ListCryptoSort
+  ): number {
+    const leftTicker = tickersMap.get(left.id);
+    const rightTicker = tickersMap.get(right.id);
+
+    const byRank = compareNullableNumber(left.rank, right.rank, "asc");
+    const byNameAsc = left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+
+    switch (sort) {
+      case "price_desc": {
+        const byPrice = compareNullableNumber(
+          leftTicker?.quotes?.USD?.price,
+          rightTicker?.quotes?.USD?.price,
+          "desc"
+        );
+        return byPrice || byRank || byNameAsc;
+      }
+      case "price_asc": {
+        const byPrice = compareNullableNumber(
+          leftTicker?.quotes?.USD?.price,
+          rightTicker?.quotes?.USD?.price,
+          "asc"
+        );
+        return byPrice || byRank || byNameAsc;
+      }
+      case "change24_desc": {
+        const byChange = compareNullableNumber(
+          leftTicker?.quotes?.USD?.percent_change_24h,
+          rightTicker?.quotes?.USD?.percent_change_24h,
+          "desc"
+        );
+        return byChange || byRank || byNameAsc;
+      }
+      case "change24_asc": {
+        const byChange = compareNullableNumber(
+          leftTicker?.quotes?.USD?.percent_change_24h,
+          rightTicker?.quotes?.USD?.percent_change_24h,
+          "asc"
+        );
+        return byChange || byRank || byNameAsc;
+      }
+      case "name_asc":
+        return byNameAsc || byRank;
+      case "name_desc":
+        return -byNameAsc || byRank;
+      case "rank_asc":
+      default:
+        return byRank || byNameAsc;
+    }
+  }
+
   async list(queryInput: unknown): Promise<CryptoListResponse> {
     const query: ListCryptoQuery = listCryptoQuerySchema.parse(queryInput);
     const [coins, tickersMap] = await Promise.all([this.getCoins(), this.getTickersMap()]);
@@ -179,9 +262,13 @@ class CoinPaprikaService {
       );
     });
 
-    const total = filtered.length;
+    const sorted = [...filtered].sort((left, right) =>
+      this.compareCoins(left, right, tickersMap, query.sort)
+    );
+
+    const total = sorted.length;
     const offset = (query.page - 1) * query.limit;
-    const pageItems = filtered.slice(offset, offset + query.limit);
+    const pageItems = sorted.slice(offset, offset + query.limit);
 
     return {
       data: pageItems.map((coin) => this.mapCoinToListItem(coin, tickersMap.get(coin.id))),

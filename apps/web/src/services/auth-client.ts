@@ -34,10 +34,25 @@ import type {
 } from "@crypto/shared";
 
 export const API_URL = import.meta.env.VITE_API_URL ?? "/api";
+const DEFAULT_AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const parsedAvatarMaxBytes = Number(import.meta.env.VITE_AVATAR_MAX_BYTES ?? DEFAULT_AVATAR_MAX_BYTES);
+export const AVATAR_MAX_BYTES =
+  Number.isFinite(parsedAvatarMaxBytes) && parsedAvatarMaxBytes > 0
+    ? parsedAvatarMaxBytes
+    : DEFAULT_AVATAR_MAX_BYTES;
 
 let accessToken: string | null = null;
 let currentUser: UserProfile | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
+
+function formatBytesToMb(bytes: number): string {
+  const mb = bytes / (1024 * 1024);
+  return Number.isInteger(mb) ? `${mb} MB` : `${mb.toFixed(1)} MB`;
+}
+
+function avatarTooLargeMessage(): string {
+  return `Avatar must be at most ${formatBytesToMb(AVATAR_MAX_BYTES)}`;
+}
 
 function hasContentTypeHeader(headers: RequestInit["headers"]): boolean {
   if (!headers) {
@@ -238,6 +253,7 @@ export async function listCryptos(
 
   if (parsed.search) params.set("search", parsed.search);
   if (parsed.type) params.set("type", parsed.type);
+  if (parsed.sort) params.set("sort", parsed.sort);
   if (parsed.page) params.set("page", String(parsed.page));
   if (parsed.limit) params.set("limit", String(parsed.limit));
 
@@ -334,6 +350,10 @@ export async function updateMyProfile(input: UpdateUserProfileInput): Promise<Us
 }
 
 export async function uploadAvatar(file: File): Promise<AvatarUpdateResponse> {
+  if (file.size > AVATAR_MAX_BYTES) {
+    throw new Error(avatarTooLargeMessage());
+  }
+
   const formData = new FormData();
   formData.set("avatar", file);
 
@@ -341,6 +361,26 @@ export async function uploadAvatar(file: File): Promise<AvatarUpdateResponse> {
     method: "PUT",
     body: formData
   });
+
+  if (response.status === 413) {
+    throw new Error(avatarTooLargeMessage());
+  }
+
   await assertOk(response, "Failed to upload avatar");
   return avatarUpdateResponseSchema.parse(await parseJson(response));
+}
+
+export async function getMyAvatarSignedUrl(): Promise<string | null> {
+  const response = await requestWithAuth("/users/me/avatar-url");
+  if (response.status === 404) {
+    return null;
+  }
+
+  await assertOk(response, "Failed to load avatar");
+  const payload = await parseJson<{ url?: unknown }>(response);
+  if (typeof payload.url !== "string" || payload.url.length === 0) {
+    throw new Error("Invalid avatar URL response");
+  }
+
+  return payload.url;
 }

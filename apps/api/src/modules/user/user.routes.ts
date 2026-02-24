@@ -134,6 +134,31 @@ const userRoutes: FastifyPluginAsync<{ env: AppEnv }> = async (app, options) => 
     }
   );
 
+  app.get<{ Reply: { url: string } }>(
+    "/users/me/avatar-url",
+    {
+      preHandler: requireAccessToken,
+      schema: {
+        tags: ["Users"],
+        summary: "Get user avatar signed URL"
+      }
+    },
+    async (request, reply) => {
+      const authUser = getAuthUser(request);
+      const user = await userRepository.findById(authUser.sub);
+      if (!user) {
+        throw new AppError("User not found", 404);
+      }
+
+      if (!user.avatarKey) {
+        throw new AppError("User has no avatar", 404);
+      }
+
+      const avatarSignedUrl = await storageService.getAvatarSignedUrl(user.avatarKey);
+      return reply.send({ url: avatarSignedUrl });
+    }
+  );
+
   app.get(
     "/users/me/avatar",
     {

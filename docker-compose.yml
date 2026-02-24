@@ -17,7 +17,7 @@ services:
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       S3_BUCKET: avatars
-      AVATAR_MAX_BYTES: 2097152
+      AVATAR_MAX_BYTES: 5242880
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       RESEND_FROM: ${RESEND_FROM:-}
       RATE_LIMIT_MAX: 200
@@ -42,6 +42,7 @@ services:
     environment:
       PORT: 80
       API_PROXY_TARGET: http://api:3000
+      NGINX_CLIENT_MAX_BODY_SIZE: 6m
     ports:
       - "8080:80"
     depends_on:

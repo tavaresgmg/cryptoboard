@@ -155,6 +155,7 @@ describe("auth-client", () => {
         const parsed = new URL(url, "http://localhost");
         expect(parsed.searchParams.get("search")).toBe("bit");
         expect(parsed.searchParams.get("type")).toBe("coin");
+        expect(parsed.searchParams.get("sort")).toBe("price_desc");
         expect(parsed.searchParams.get("page")).toBe("1");
         expect(parsed.searchParams.get("limit")).toBe("2");
 
@@ -202,6 +203,7 @@ describe("auth-client", () => {
     const result = await client.listCryptos({
       search: "bit",
       type: "coin",
+      sort: "price_desc",
       page: 1,
       limit: 2
     });
@@ -382,5 +384,86 @@ describe("auth-client", () => {
     expect(updated.name).toBe("Updated Name");
     expect(updated.preferredCurrency).toBe("BRL");
     expect(client.getCurrentUser()?.name).toBe("Updated Name");
+  });
+
+  test("uploadAvatar deve bloquear arquivo acima do limite antes de chamar API", async () => {
+    const fetchMock = vi.fn();
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const client = await loadClient();
+
+    const oversizedFile = new File(
+      [new Uint8Array(5 * 1024 * 1024 + 1)],
+      "avatar.png",
+      { type: "image/png" }
+    );
+
+    await expect(client.uploadAvatar(oversizedFile)).rejects.toThrow("Avatar must be at most 5 MB");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("uploadAvatar deve retornar mensagem amigavel quando API responde 413", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = resolveUrl(input);
+
+      if (url === `${API_URL}/auth/login`) {
+        return jsonResponse({
+          accessToken: "access-token-login",
+          user: {
+            id: "user-1",
+            name: "User One",
+            email: "user@example.com"
+          }
+        });
+      }
+
+      if (url === `${API_URL}/users/me` && init?.method !== "PUT") {
+        return jsonResponse(profilePayload());
+      }
+
+      if (url === `${API_URL}/users/me/avatar` && init?.method === "PUT") {
+        expect(readHeader(init.headers, "Authorization")).toBe("Bearer access-token-login");
+        return new Response("payload too large", { status: 413 });
+      }
+
+      throw new Error(`URL inesperada: ${url}`);
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const client = await loadClient();
+
+    await client.login({
+      email: "user@example.com",
+      password: "12345678"
+    });
+
+    const validSmallFile = new File([new Uint8Array(32)], "avatar.png", { type: "image/png" });
+    await expect(client.uploadAvatar(validSmallFile)).rejects.toThrow("Avatar must be at most 5 MB");
+  });
+
+  test("getMyAvatarSignedUrl deve retornar null quando avatar nao existe", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = resolveUrl(input);
+
+      if (url === `${API_URL}/auth/refresh`) {
+        return jsonResponse({ accessToken: "access-token-refresh" });
+      }
+
+      if (url === `${API_URL}/users/me`) {
+        return jsonResponse(profilePayload());
+      }
+
+      if (url === `${API_URL}/users/me/avatar-url`) {
+        return jsonResponse({ message: "User has no avatar" }, 404);
+      }
+
+      throw new Error(`URL inesperada: ${url}`);
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const client = await loadClient();
+
+    const avatarUrl = await client.getMyAvatarSignedUrl();
+    expect(avatarUrl).toBeNull();
   });
 });

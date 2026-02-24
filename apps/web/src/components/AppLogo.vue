@@ -1,5 +1,8 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ size?: "sm" | "md" | "lg" }>(), { size: "md" });
+withDefaults(defineProps<{ size?: "sm" | "md" | "lg"; iconOnly?: boolean }>(), {
+  size: "md",
+  iconOnly: false
+});
 </script>
 
 <template>
@@ -9,6 +12,7 @@ withDefaults(defineProps<{ size?: "sm" | "md" | "lg" }>(), { size: "md" });
       'gap-1.5': size === 'sm',
       'gap-2': size === 'md',
       'gap-3': size === 'lg',
+      'gap-0': iconOnly,
     }"
   >
     <svg
@@ -45,6 +49,7 @@ withDefaults(defineProps<{ size?: "sm" | "md" | "lg" }>(), { size: "md" });
       />
     </svg>
     <div
+      v-if="!iconOnly"
       class="flex flex-col leading-none"
       :class="{
         'gap-0': size === 'sm',

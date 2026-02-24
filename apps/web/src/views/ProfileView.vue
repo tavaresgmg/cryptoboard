@@ -16,7 +16,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/composables/useUser";
-import { API_URL, updateMyProfile, uploadAvatar } from "@/services/auth-client";
+import {
+  getMyAvatarSignedUrl,
+  updateMyProfile,
+  uploadAvatar
+} from "@/services/auth-client";
 
 const { t } = useI18n();
 const { user, setUser, loadUser } = useUser();
@@ -25,12 +29,21 @@ const profileName = ref("");
 const profileDescription = ref("");
 const profileCurrency = ref<string>("USD");
 const avatarFile = ref<File | null>(null);
+const avatarSrc = ref<string | undefined>(undefined);
 const savingProfile = ref(false);
 const uploadingAvatar = ref(false);
 
-function avatarUrl() {
-  if (!user.value?.hasAvatar) return undefined;
-  return `${API_URL}/users/me/avatar?t=${Date.now()}`;
+async function loadAvatar() {
+  if (!user.value?.hasAvatar) {
+    avatarSrc.value = undefined;
+    return;
+  }
+
+  try {
+    avatarSrc.value = (await getMyAvatarSignedUrl()) ?? undefined;
+  } catch {
+    avatarSrc.value = undefined;
+  }
 }
 
 function initials() {
@@ -82,7 +95,11 @@ async function submitAvatar() {
 }
 
 watch(user, (u) => {
-  if (u) syncForm();
+  if (u) {
+    syncForm();
+  }
+
+  void loadAvatar();
 }, { immediate: true });
 </script>
 
@@ -96,7 +113,7 @@ watch(user, (u) => {
       </CardHeader>
       <CardContent class="flex items-center gap-6">
         <Avatar class="size-20">
-          <AvatarImage v-if="avatarUrl()" :src="avatarUrl()!" :alt="user?.name ?? ''" />
+          <AvatarImage v-if="avatarSrc" :src="avatarSrc" :alt="user?.name ?? ''" />
           <AvatarFallback class="bg-primary text-primary-foreground text-2xl">
             {{ initials() }}
           </AvatarFallback>

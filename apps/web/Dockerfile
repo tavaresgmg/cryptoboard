@@ -23,7 +23,8 @@ COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
 
 ENV PORT=80
 ENV API_PROXY_TARGET=http://api:3000
+ENV NGINX_CLIENT_MAX_BODY_SIZE=6m
 
 EXPOSE 80
 
-CMD ["/bin/sh", "-c", "envsubst '${PORT} ${API_PROXY_TARGET}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "envsubst '${PORT} ${API_PROXY_TARGET} ${NGINX_CLIENT_MAX_BODY_SIZE}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]

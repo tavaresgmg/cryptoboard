@@ -55,7 +55,7 @@ export function setRefreshTokenCookie(reply: FastifyReply, token: string, env: A
   reply.setCookie("refreshToken", token, {
     httpOnly: true,
     sameSite: "strict",
-    secure: env.NODE_ENV === "production",
+    secure: env.AUTH_COOKIE_SECURE,
     path: "/auth",
     maxAge: 60 * 60 * 24 * 7
   });
@@ -65,7 +65,7 @@ export function clearRefreshTokenCookie(reply: FastifyReply, env: AppEnv): void 
   reply.clearCookie("refreshToken", {
     httpOnly: true,
     sameSite: "strict",
-    secure: env.NODE_ENV === "production",
+    secure: env.AUTH_COOKIE_SECURE,
     path: "/auth"
   });
 }

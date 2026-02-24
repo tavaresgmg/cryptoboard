@@ -1,5 +1,28 @@
 import { z } from "zod";
 
+const booleanFromEnv = z.preprocess((value) => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") {
+      return true;
+    }
+
+    if (normalized === "false") {
+      return false;
+    }
+  }
+
+  return value;
+}, z.boolean().optional());
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
@@ -7,6 +30,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_ORIGIN: z.string().default("http://localhost:5173"),
   WEB_APP_URL: z.url().default("http://localhost:5173"),
+  AUTH_COOKIE_SECURE: booleanFromEnv,
   MONGODB_URI: z.string().default("mongodb://localhost:27017/erictel"),
   COINPAPRIKA_BASE_URL: z.url().default("https://api.coinpaprika.com/v1"),
   S3_ENDPOINT: z.url().default("http://localhost:9000"),
@@ -15,7 +39,7 @@ const envSchema = z.object({
   S3_ACCESS_KEY: z.string().default("minioadmin"),
   S3_SECRET_KEY: z.string().default("minioadmin"),
   S3_BUCKET: z.string().default("avatars"),
-  AVATAR_MAX_BYTES: z.coerce.number().int().positive().default(2 * 1024 * 1024),
+  AVATAR_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM: z.email().optional(),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
@@ -30,9 +54,16 @@ const envSchema = z.object({
     ),
   JWT_ACCESS_EXPIRATION: z.string().default("15m"),
   JWT_REFRESH_EXPIRATION: z.string().default("7d")
+}).transform((parsedEnv) => {
+  const inferredCookieSecure = new URL(parsedEnv.WEB_APP_URL).protocol === "https:";
+
+  return {
+    ...parsedEnv,
+    AUTH_COOKIE_SECURE: parsedEnv.AUTH_COOKIE_SECURE ?? inferredCookieSecure
+  };
 });
 
-export type AppEnv = z.infer<typeof envSchema>;
+export type AppEnv = z.output<typeof envSchema>;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   return envSchema.parse(source);

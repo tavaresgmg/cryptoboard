@@ -3,7 +3,6 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import ThemeToggle from "@/components/ThemeToggle.vue";
 import LocaleSelector from "@/components/LocaleSelector.vue";
-import UserMenu from "@/components/UserMenu.vue";
 </script>
 
 <template>
@@ -16,7 +15,6 @@ import UserMenu from "@/components/UserMenu.vue";
     <div class="flex items-center gap-2 px-4">
       <ThemeToggle />
       <LocaleSelector />
-      <UserMenu />
     </div>
   </header>
 </template>

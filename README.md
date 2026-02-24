@@ -27,7 +27,7 @@ Fullstack cryptocurrency dashboard — **Vue 3 + Fastify + MongoDB + TypeScript*
 
 - **Auth** — Register, login, forgot/reset password, logout
 - **Profile** — Edit name, email, description, avatar, preferred currency
-- **Crypto catalog** — Search, filter (coin/token), pagination, detail view
+- **Crypto catalog** — Search, filter (coin/token), sorting, pagination, detail view
 - **Favorites** — Add/remove, dedicated list with live prices
 - **i18n** — Spanish (default), English, Portuguese
 - **Security** — Helmet, rate limiting, HttpOnly refresh cookie, same-origin proxy
@@ -90,6 +90,7 @@ pnpm typecheck                # Typecheck monorepo
 | GET    | `/users/me`                   | Get profile               | Yes    |
 | PUT    | `/users/me`                   | Update profile            | Yes    |
 | PUT    | `/users/me/avatar`            | Upload avatar             | Yes    |
+| GET    | `/users/me/avatar-url`        | Get avatar signed URL     | Yes    |
 | GET    | `/users/me/avatar`            | Get avatar (presigned)    | Yes    |
 | POST   | `/users/me/favorites/:coinId` | Add favorite              | Yes    |
 | DELETE | `/users/me/favorites/:coinId` | Remove favorite           | Yes    |
@@ -115,12 +116,12 @@ pnpm typecheck                # Typecheck monorepo
 
 ## Production
 
-| Service    | Provider           | Tier   |
-| ---------- | ------------------ | ------ |
-| API + Web  | GCP Cloud Run      | Free   |
-| Database   | MongoDB Atlas M0   | Free   |
-| Storage    | Cloudflare R2      | Free   |
-| Email      | Resend             | Free   |
+| Service   | Provider         | Tier |
+| --------- | ---------------- | ---- |
+| API + Web | GCP Cloud Run    | Free |
+| Database  | MongoDB Atlas M0 | Free |
+| Storage   | Cloudflare R2    | Free |
+| Email     | Resend           | Free |
 
 Nginx in the web container proxies `/api/*` to the API service (same-origin — cookies work with `SameSite=Strict`, no CORS/CSRF needed).
 

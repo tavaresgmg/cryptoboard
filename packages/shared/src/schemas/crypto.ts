@@ -1,15 +1,26 @@
 import { z } from "zod";
 
 export const cryptoTypeSchema = z.enum(["coin", "token"]);
+export const listCryptoSortSchema = z.enum([
+  "rank_asc",
+  "price_desc",
+  "price_asc",
+  "change24_desc",
+  "change24_asc",
+  "name_asc",
+  "name_desc"
+]);
 
 export const listCryptoQuerySchema = z.object({
   search: z.string().trim().min(1).optional(),
   type: cryptoTypeSchema.optional(),
+  sort: listCryptoSortSchema.default("price_desc"),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20)
 });
 
 export type ListCryptoQuery = z.infer<typeof listCryptoQuerySchema>;
+export type ListCryptoSort = z.infer<typeof listCryptoSortSchema>;
 
 export const cryptoListItemSchema = z.object({
   id: z.string(),

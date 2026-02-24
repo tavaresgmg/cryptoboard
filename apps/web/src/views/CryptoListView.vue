@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { watchDebounced } from "@vueuse/core";
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { toast } from "vue-sonner";
-import type { CryptoDetail, CryptoListItem } from "@crypto/shared";
+import type { CryptoDetail, CryptoListItem, ListCryptoSort } from "@crypto/shared";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -33,10 +34,13 @@ const dialogOpen = ref(false);
 const loadingList = ref(false);
 const loadingDetail = ref(false);
 const page = ref(1);
-const limit = ref(12);
+const limit = ref(24);
 const total = ref(0);
 const search = ref("");
-const type = ref("");
+const ALL_TYPES_VALUE = "all";
+const type = ref<typeof ALL_TYPES_VALUE | "coin" | "token">(ALL_TYPES_VALUE);
+const sort = ref<ListCryptoSort>("price_desc");
+const LIMIT_OPTIONS = [12, 24, 48] as const;
 let abortController: AbortController | null = null;
 
 async function loadCryptos() {
@@ -50,7 +54,8 @@ async function loadCryptos() {
       page: page.value,
       limit: limit.value,
       search: search.value || undefined,
-      type: (type.value as "coin" | "token") || undefined,
+      type: type.value === ALL_TYPES_VALUE ? undefined : type.value,
+      sort: sort.value,
     }, signal);
     cryptos.value = response.data;
     total.value = response.pagination.total;
@@ -104,22 +109,22 @@ function nextPage() {
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit.value)));
 
-watch(search, () => {
+watchDebounced(search, () => {
   page.value = 1;
-  loadCryptos();
-});
+  void loadCryptos();
+}, { debounce: 300, maxWait: 1000 });
 
-watch(type, () => {
+watch([type, sort, limit], () => {
   page.value = 1;
-  loadCryptos();
+  void loadCryptos();
 });
 
 watch(page, () => {
-  loadCryptos();
+  void loadCryptos();
 });
 
 onMounted(() => {
-  loadCryptos();
+  void loadCryptos();
 });
 </script>
 
@@ -127,20 +132,47 @@ onMounted(() => {
   <div>
     <h1 class="text-2xl font-bold mb-6">{{ t("crypto.title") }}</h1>
 
-    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <div class="flex flex-col lg:flex-row gap-3 mb-6">
       <SearchInput
         v-model="search"
         :placeholder="t('crypto.searchPlaceholder')"
         class="flex-1"
       />
-      <Select :model-value="type" @update:model-value="(v) => (type = String(v ?? ''))">
+      <Select v-model="type">
         <SelectTrigger class="w-full sm:w-[140px]">
           <SelectValue :placeholder="t('crypto.filterAll')" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">{{ t("crypto.filterAll") }}</SelectItem>
+          <SelectItem :value="ALL_TYPES_VALUE">{{ t("crypto.filterAll") }}</SelectItem>
           <SelectItem value="coin">{{ t("crypto.filterCoin") }}</SelectItem>
           <SelectItem value="token">{{ t("crypto.filterToken") }}</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select v-model="sort">
+        <SelectTrigger class="w-full sm:w-[220px]">
+          <SelectValue :placeholder="t('crypto.sortLabel')" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="price_desc">{{ t("crypto.sortPriceDesc") }}</SelectItem>
+          <SelectItem value="rank_asc">{{ t("crypto.sortRank") }}</SelectItem>
+          <SelectItem value="price_asc">{{ t("crypto.sortPriceAsc") }}</SelectItem>
+          <SelectItem value="change24_desc">{{ t("crypto.sortChangeDesc") }}</SelectItem>
+          <SelectItem value="change24_asc">{{ t("crypto.sortChangeAsc") }}</SelectItem>
+          <SelectItem value="name_asc">{{ t("crypto.sortNameAsc") }}</SelectItem>
+          <SelectItem value="name_desc">{{ t("crypto.sortNameDesc") }}</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select
+        :model-value="String(limit)"
+        @update:model-value="(value) => (limit = Number(value))"
+      >
+        <SelectTrigger class="w-full sm:w-[140px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="option in LIMIT_OPTIONS" :key="option" :value="String(option)">
+            {{ option }} {{ t("crypto.perPage") }}
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -153,7 +185,7 @@ onMounted(() => {
       :description="t('crypto.noResults')"
     />
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
       <CryptoCard
         v-for="coin in cryptos"
         :key="coin.id"

@@ -246,6 +246,7 @@ function createTestEnv(mongoUri: string): AppEnv {
     PORT: 3000,
     WEB_ORIGIN: "http://localhost:5173",
     WEB_APP_URL: "http://localhost:5173",
+    AUTH_COOKIE_SECURE: false,
     MONGODB_URI: mongoUri,
     COINPAPRIKA_BASE_URL: `https://coinpaprika.test/${randomUUID()}`,
     S3_ENDPOINT: "http://localhost:9000",
@@ -254,7 +255,7 @@ function createTestEnv(mongoUri: string): AppEnv {
     S3_ACCESS_KEY: "minioadmin",
     S3_SECRET_KEY: "minioadmin",
     S3_BUCKET: "avatars",
-    AVATAR_MAX_BYTES: 2 * 1024 * 1024,
+    AVATAR_MAX_BYTES: 5 * 1024 * 1024,
     RATE_LIMIT_MAX: 100,
     RATE_LIMIT_TIME_WINDOW: "1 minute",
     RESEND_API_KEY: undefined,
@@ -392,6 +393,33 @@ describe("Auth + Crypto + Favorites integration", () => {
       headers: authHeaders(authPayload.accessToken)
     });
     assert.equal(addFavoriteResponse.statusCode, 404);
+  });
+
+  test("deve ordenar lista de criptos por variacao 24h quando solicitado", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Sort",
+        email: `user-${randomUUID()}@example.com`,
+        password: "12345678"
+      }
+    });
+    assert.equal(registerResponse.statusCode, 201);
+    const authPayload = parseJson<RegisterResponse>(registerResponse.body);
+
+    const listResponse = await app.inject({
+      method: "GET",
+      url: "/crypto?sort=change24_desc&page=1&limit=3",
+      headers: authHeaders(authPayload.accessToken)
+    });
+
+    assert.equal(listResponse.statusCode, 200);
+    const cryptoList = parseJson<CryptoListResponse>(listResponse.body);
+    assert.deepEqual(
+      cryptoList.data.map((item) => item.id),
+      ["usdt-tether", "eth-ethereum", "btc-bitcoin"]
+    );
   });
 
   test("deve retornar 400 para body JSON vazio no endpoint de favoritos", async () => {
@@ -619,5 +647,27 @@ describe("Auth + Crypto + Favorites integration", () => {
       headers: authHeaders(authPayload.accessToken)
     });
     assert.equal(avatarResponse.statusCode, 400);
+  });
+
+  test("deve retornar 404 ao buscar avatar signed URL sem avatar cadastrado", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Avatar URL",
+        email: `user-${randomUUID()}@example.com`,
+        password: "12345678"
+      }
+    });
+    assert.equal(registerResponse.statusCode, 201);
+    const authPayload = parseJson<RegisterResponse>(registerResponse.body);
+
+    const avatarUrlResponse = await app.inject({
+      method: "GET",
+      url: "/users/me/avatar-url",
+      headers: authHeaders(authPayload.accessToken)
+    });
+
+    assert.equal(avatarUrlResponse.statusCode, 404);
   });
 });
