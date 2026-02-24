@@ -36,3 +36,6 @@ docker/data/
 
 # Turbo
 .turbo/
+
+# Internal docs (not shipped)
+docs/
