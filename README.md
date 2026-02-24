@@ -46,6 +46,7 @@ Fullstack cryptocurrency dashboard — **Vue 3 + Fastify + MongoDB + TypeScript*
 - **Enumeration resistance:** forgot-password always returns the same message for existing/non-existing email
 - **Hardening:** Helmet headers, route-specific rate limits, timing-safe token hash comparison, open-redirect guard
 - **Architecture control:** same-origin `nginx` proxy for web -> API to avoid CORS/CSRF exposure in the challenge setup
+- **Secrets hygiene:** no production secrets committed; CI injects an ephemeral `JWT_SECRET` and uses non-sensitive defaults for email sender
 
 Implementation details and tradeoffs are documented in [`NOTES.md`](NOTES.md).
 

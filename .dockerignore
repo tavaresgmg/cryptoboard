@@ -4,6 +4,10 @@ dist
 **/dist
 .git
 .gitignore
+.env
+.env.*
+!.env.example
+!apps/api/.env.example
 .DS_Store
 coverage
 **/coverage

@@ -31,6 +31,7 @@
 - Helmet headers, scrypt password hashing
 - Open-redirect protection on login callback
 - JWT secret rejected in production if using default value
+- CI dockerized E2E uses ephemeral JWT secret (generated at runtime, not hardcoded)
 - Reset tokens stored as SHA-256 hash
 - Forgot-password response is uniform for existing/non-existing email (anti-enumeration)
 - Reset token is single-use and cleared after successful password change

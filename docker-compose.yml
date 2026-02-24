@@ -19,7 +19,7 @@ services:
       S3_BUCKET: avatars
       AVATAR_MAX_BYTES: 5242880
       RESEND_API_KEY: ${RESEND_API_KEY:-}
-      RESEND_FROM: ${RESEND_FROM:-}
+      RESEND_FROM: ${RESEND_FROM:-noreply@example.com}
       RATE_LIMIT_MAX: 200
       RATE_LIMIT_TIME_WINDOW: 1 minute
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please}

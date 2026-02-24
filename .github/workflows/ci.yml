@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI: true
-      JWT_SECRET: gha-ci-jwt-secret-please-change-123456
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,7 +66,11 @@ jobs:
         run: pnpm --filter web test:e2e
 
       - name: Start Docker stack for real backend E2E
-        run: docker compose up -d --build
+        env:
+          RESEND_FROM: noreply@example.com
+        run: |
+          export JWT_SECRET="$(openssl rand -hex 32)"
+          docker compose up -d --build
 
       - name: Wait for API and Web health
         run: |
