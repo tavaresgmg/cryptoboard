@@ -39,8 +39,16 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Cache mongodb-memory-server binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}
+
       - name: API tests
         run: pnpm --filter api test
+        env:
+          MONGOMS_DOWNLOAD_DIR: ~/.cache/mongodb-binaries
 
       - name: Web tests
         run: pnpm --filter web test

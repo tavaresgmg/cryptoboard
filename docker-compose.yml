@@ -19,14 +19,16 @@ services:
       AVATAR_MAX_BYTES: 2097152
       RATE_LIMIT_MAX: 200
       RATE_LIMIT_TIME_WINDOW: 1 minute
-      JWT_SECRET: dev-secret-change-me-please
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please}
       JWT_ACCESS_EXPIRATION: 15m
       JWT_REFRESH_EXPIRATION: 7d
     ports:
       - "3000:3000"
     depends_on:
-      - mongo
-      - minio
+      mongo:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
   web:
     build:
@@ -46,6 +48,11 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio:latest

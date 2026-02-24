@@ -36,6 +36,3 @@ docker/data/
 
 # Turbo
 .turbo/
-
-# Project docs (not versioned by request)
-docs/
