@@ -11,6 +11,25 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("Auth pages — navigation", () => {
+  test("should not request refresh when opening login page unauthenticated", async ({ page }) => {
+    let refreshCalls = 0;
+
+    await page.unroute("**/auth/refresh");
+    await page.route("**/auth/refresh", async (route) => {
+      refreshCalls += 1;
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Unauthorized" })
+      });
+    });
+
+    await page.goto("/login");
+
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Iniciar sesión");
+    expect(refreshCalls).toBe(0);
+  });
+
   test("should allow changing language on login screen", async ({ page }) => {
     await page.goto("/login");
 

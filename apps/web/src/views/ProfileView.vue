@@ -126,7 +126,7 @@ watch(
       <CardContent class="flex items-center gap-6">
         <Avatar class="size-20">
           <AvatarImage v-if="avatarSrc" :src="avatarSrc" :alt="user?.name ?? ''" />
-          <AvatarFallback class="bg-primary text-primary-foreground text-2xl">
+          <AvatarFallback class="text-2xl">
             {{ initials() }}
           </AvatarFallback>
         </Avatar>

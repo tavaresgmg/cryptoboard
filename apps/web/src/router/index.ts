@@ -79,11 +79,8 @@ export function createAppRouter(history?: RouterHistory) {
       return true;
     }
 
-    if (to.name === "login" || to.name === "register") {
-      const hasSession = isAuthenticated() || (await ensureSession());
-      if (hasSession) {
-        return { name: "cryptos" };
-      }
+    if ((to.name === "login" || to.name === "register") && isAuthenticated()) {
+      return { name: "cryptos" };
     }
 
     return true;

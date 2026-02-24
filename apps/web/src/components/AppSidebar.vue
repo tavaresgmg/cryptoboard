@@ -143,9 +143,7 @@ async function handleLogout() {
               >
                 <Avatar class="size-9 rounded-lg">
                   <AvatarImage v-if="avatarSrc" :src="avatarSrc" :alt="user?.name ?? ''" />
-                  <AvatarFallback
-                    class="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold"
-                  >
+                  <AvatarFallback class="rounded-lg text-xs font-semibold">
                     {{ initials() }}
                   </AvatarFallback>
                 </Avatar>

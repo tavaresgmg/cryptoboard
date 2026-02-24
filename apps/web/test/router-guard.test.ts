@@ -72,6 +72,20 @@ describe("router guards", () => {
     expect(router.currentRoute.value.name).toBe("cryptos");
   });
 
+  test("should not call ensureSession on login route when user is unauthenticated", async () => {
+    authMocks.isAuthenticated.mockReturnValue(false);
+    authMocks.ensureSession.mockResolvedValue(false);
+
+    const { createAppRouter } = await import("../src/router/index");
+    const router = createAppRouter(createMemoryHistory());
+
+    await router.push("/login");
+    await router.isReady();
+
+    expect(router.currentRoute.value.name).toBe("login");
+    expect(authMocks.ensureSession).not.toHaveBeenCalled();
+  });
+
   test("should allow forgot-password without authentication", async () => {
     authMocks.isAuthenticated.mockReturnValue(false);
     authMocks.ensureSession.mockResolvedValue(false);
