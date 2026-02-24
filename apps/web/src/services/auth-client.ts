@@ -230,7 +230,8 @@ export async function logout(): Promise<void> {
 }
 
 export async function listCryptos(
-  query: Partial<ListCryptoQuery> = {}
+  query: Partial<ListCryptoQuery> = {},
+  signal?: AbortSignal
 ): Promise<CryptoListResponse> {
   const parsed = listCryptoQuerySchema.partial().parse(query);
   const params = new URLSearchParams();
@@ -242,7 +243,7 @@ export async function listCryptos(
 
   const suffix = params.toString();
   const path = suffix.length > 0 ? `/crypto?${suffix}` : "/crypto";
-  const response = await requestWithAuth(path);
+  const response = await requestWithAuth(path, { signal });
   await assertOk(response, "Failed to load cryptocurrencies");
 
   return cryptoListResponseSchema.parse(await parseJson(response));

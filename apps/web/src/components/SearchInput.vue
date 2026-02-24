@@ -32,7 +32,7 @@ function onInput(event: Event) {
   clearTimeout(timer);
   timer = setTimeout(() => {
     emit("update:modelValue", value);
-  }, 300);
+  }, 500);
 }
 </script>
 

@@ -37,8 +37,13 @@ const limit = ref(12);
 const total = ref(0);
 const search = ref("");
 const type = ref("");
+let abortController: AbortController | null = null;
 
 async function loadCryptos() {
+  abortController?.abort();
+  abortController = new AbortController();
+  const signal = abortController.signal;
+
   loadingList.value = true;
   try {
     const response = await listCryptos({
@@ -46,13 +51,14 @@ async function loadCryptos() {
       limit: limit.value,
       search: search.value || undefined,
       type: (type.value as "coin" | "token") || undefined,
-    });
+    }, signal);
     cryptos.value = response.data;
     total.value = response.pagination.total;
   } catch (err) {
+    if (signal.aborted) return;
     toast.error(err instanceof Error ? err.message : t("common.unexpectedError"));
   } finally {
-    loadingList.value = false;
+    if (!signal.aborted) loadingList.value = false;
   }
 }
 
