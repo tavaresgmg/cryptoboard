@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { toast } from "vue-sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { getLocalizedAuthErrorMessage } from "@/lib/auth-errors";
 import { forgotPassword } from "@/services/auth-client";
 import AuthLayout from "@/components/AuthLayout.vue";
 
 const { t } = useI18n();
+const router = useRouter();
 
 const email = ref("");
 const loading = ref(false);
@@ -16,10 +19,11 @@ const loading = ref(false);
 async function submit() {
   loading.value = true;
   try {
-    const response = await forgotPassword({ email: email.value });
-    toast.success(response.message);
+    await forgotPassword({ email: email.value });
+    toast.success(t("auth.forgotRequestSent"));
+    await router.push("/login");
   } catch (err) {
-    toast.error(err instanceof Error ? err.message : t("common.unexpectedError"));
+    toast.error(getLocalizedAuthErrorMessage(err, t, "auth.forgotRequestFailed"));
   } finally {
     loading.value = false;
   }

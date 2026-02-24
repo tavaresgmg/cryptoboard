@@ -64,3 +64,26 @@ jobs:
 
       - name: Web E2E
         run: pnpm --filter web test:e2e
+
+      - name: Start Docker stack for real backend E2E
+        run: docker compose up -d --build
+
+      - name: Wait for API and Web health
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000/health >/dev/null && curl -fsS http://127.0.0.1:8080 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs --tail=120
+          echo "API/Web did not become healthy in time"
+          exit 1
+
+      - name: Web E2E (real backend)
+        run: pnpm --filter web test:e2e:real
+
+      - name: Stop Docker stack
+        if: always()
+        run: docker compose down -v

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { toast } from "vue-sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { getLocalizedAuthErrorMessage } from "@/lib/auth-errors";
 import { register } from "@/services/auth-client";
 import AuthLayout from "@/components/AuthLayout.vue";
 
@@ -15,15 +16,29 @@ const { t } = useI18n();
 const name = ref("");
 const email = ref("");
 const password = ref("");
+const confirmPassword = ref("");
 const loading = ref(false);
+const passwordsMatch = computed(() => password.value === confirmPassword.value);
+const canSubmit = computed(
+  () =>
+    name.value.trim().length >= 2 &&
+    password.value.length >= 8 &&
+    confirmPassword.value.length >= 8 &&
+    passwordsMatch.value
+);
 
 async function submit() {
+  if (!passwordsMatch.value) {
+    toast.error(t("auth.passwordsDoNotMatch"));
+    return;
+  }
+
   loading.value = true;
   try {
     await register({ name: name.value, email: email.value, password: password.value });
     await router.push({ name: "onboarding" });
   } catch (err) {
-    toast.error(err instanceof Error ? err.message : t("common.unexpectedError"));
+    toast.error(getLocalizedAuthErrorMessage(err, t, "auth.registerFailed"));
   } finally {
     loading.value = false;
   }
@@ -64,7 +79,21 @@ async function submit() {
           required
         />
       </div>
-      <Button type="submit" :disabled="loading" class="w-full">
+      <div class="space-y-2">
+        <Label for="confirmPassword">{{ t("common.confirmPassword") }}</Label>
+        <Input
+          id="confirmPassword"
+          v-model="confirmPassword"
+          type="password"
+          autocomplete="new-password"
+          minlength="8"
+          required
+        />
+      </div>
+      <p v-if="confirmPassword.length > 0 && !passwordsMatch" class="text-xs text-destructive">
+        {{ t("auth.passwordsDoNotMatch") }}
+      </p>
+      <Button type="submit" :disabled="loading || !canSubmit" class="w-full">
         {{ loading ? t("common.loading") : t("auth.registerAction") }}
       </Button>
     </form>

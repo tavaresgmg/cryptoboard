@@ -39,6 +39,18 @@ Fullstack cryptocurrency dashboard — **Vue 3 + Fastify + MongoDB + TypeScript*
 
 ---
 
+## Security Highlights
+
+- **Session model:** short-lived access token in memory + rotated refresh token in `HttpOnly` cookie (`SameSite=Strict`)
+- **Password reset:** random token sent by email, only SHA-256 hash persisted, token invalidated after first use
+- **Enumeration resistance:** forgot-password always returns the same message for existing/non-existing email
+- **Hardening:** Helmet headers, route-specific rate limits, timing-safe token hash comparison, open-redirect guard
+- **Architecture control:** same-origin `nginx` proxy for web -> API to avoid CORS/CSRF exposure in the challenge setup
+
+Implementation details and tradeoffs are documented in [`NOTES.md`](NOTES.md).
+
+---
+
 ## Quick Start
 
 ```bash
@@ -68,9 +80,10 @@ pnpm --filter web dev    # http://localhost:5173
 ## Scripts
 
 ```bash
-pnpm --filter api test        # API integration tests (10)
-pnpm --filter web test        # Frontend unit tests (25)
-pnpm --filter web test:e2e    # E2E — Playwright (17)
+pnpm --filter api test        # API integration tests (auth, crypto, favorites, security)
+pnpm --filter web test        # Frontend unit tests
+pnpm --filter web test:e2e    # E2E — Playwright (routing, auth, and authenticated journey)
+pnpm --filter web test:e2e:real # E2E smoke with real Docker API/DB
 pnpm --filter api test:coverage
 pnpm --filter web test:coverage
 pnpm --filter api seed        # Seed test user + favorites

@@ -11,6 +11,17 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("Auth pages — navigation", () => {
+  test("should allow changing language on login screen", async ({ page }) => {
+    await page.goto("/login");
+
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Iniciar sesión");
+
+    await page.getByRole("button", { name: "ES" }).click();
+    await page.getByRole("menuitem", { name: /English/i }).click();
+
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Sign in");
+  });
+
   test("should open login and navigate to register", async ({ page }) => {
     await page.goto("/login");
 
@@ -55,14 +66,13 @@ test.describe("Auth pages — navigation", () => {
     await page.goto("/reset-password?token=abc123");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.locator("#token")).toHaveValue("abc123");
+    await expect(page).toHaveURL(/\/reset-password$/);
   });
 
   test("should load reset-password page without token", async ({ page }) => {
     await page.goto("/reset-password");
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.locator("#token")).toHaveValue("");
   });
 });
 
@@ -86,12 +96,15 @@ test.describe("Auth pages — form structure", () => {
     await expect(submitButton).toBeEnabled();
   });
 
-  test("register should render required name, email, and password fields", async ({ page }) => {
+  test("register should render required name, email, password, and confirm password fields", async ({
+    page
+  }) => {
     await page.goto("/register");
 
     const nameInput = page.locator("#name");
     const emailInput = page.locator("#email");
     const passwordInput = page.locator("#password");
+    const confirmPasswordInput = page.locator("#confirmPassword");
     const submitButton = page.locator('button[type="submit"]');
 
     await expect(nameInput).toBeVisible();
@@ -104,6 +117,10 @@ test.describe("Auth pages — form structure", () => {
 
     await expect(passwordInput).toBeVisible();
     await expect(passwordInput).toHaveAttribute("minlength", "8");
+
+    await expect(confirmPasswordInput).toBeVisible();
+    await expect(confirmPasswordInput).toHaveAttribute("type", "password");
+    await expect(confirmPasswordInput).toHaveAttribute("minlength", "8");
 
     await expect(submitButton).toBeVisible();
   });
@@ -122,35 +139,35 @@ test.describe("Auth pages — form structure", () => {
     await expect(submitButton).toBeEnabled();
   });
 
-  test("reset-password should keep submit disabled until form is valid", async ({ page }) => {
+  test("reset-password should keep submit disabled without token in URL", async ({ page }) => {
     await page.goto("/reset-password");
 
-    const tokenInput = page.locator("#token");
     const passwordInput = page.locator("#password");
+    const confirmPasswordInput = page.locator("#confirmPassword");
     const submitButton = page.locator('button[type="submit"]');
-
-    await expect(tokenInput).toBeVisible();
-    await expect(tokenInput).toHaveAttribute("type", "text");
-    await expect(tokenInput).toHaveAttribute("required", "");
 
     await expect(passwordInput).toBeVisible();
     await expect(passwordInput).toHaveAttribute("type", "password");
     await expect(passwordInput).toHaveAttribute("minlength", "8");
 
+    await expect(confirmPasswordInput).toBeVisible();
+    await confirmPasswordInput.fill("12345678");
+    await passwordInput.fill("12345678");
+
     await expect(submitButton).toBeDisabled();
   });
 
-  test("reset-password should enable submit when token and password are valid", async ({
+  test("reset-password should enable submit when token exists in URL and passwords match", async ({
     page
   }) => {
-    await page.goto("/reset-password");
+    await page.goto("/reset-password?token=some-valid-token");
 
-    const tokenInput = page.locator("#token");
     const passwordInput = page.locator("#password");
+    const confirmPasswordInput = page.locator("#confirmPassword");
     const submitButton = page.locator('button[type="submit"]');
 
-    await tokenInput.fill("some-valid-token");
     await passwordInput.fill("12345678");
+    await confirmPasswordInput.fill("12345678");
 
     await expect(submitButton).toBeEnabled();
   });

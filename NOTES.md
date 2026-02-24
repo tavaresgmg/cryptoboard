@@ -32,6 +32,8 @@
 - Open-redirect protection on login callback
 - JWT secret rejected in production if using default value
 - Reset tokens stored as SHA-256 hash
+- Forgot-password response is uniform for existing/non-existing email (anti-enumeration)
+- Reset token is single-use and cleared after successful password change
 
 **Would add with more time:**
 
@@ -62,6 +64,6 @@
 
 **Weakest:**
 
-- E2E covers UI structure only (no real API in Playwright — would need test DB in CI)
+- E2E now includes a real-backend smoke path in CI (Docker API/DB), but deep scenarios still rely on mocked contracts for speed/determinism
 - In-memory cache is still process-local — no shared cache invalidation across multiple instances
 - CoinPaprika free tier has rate limits — production would need paid API or aggressive caching

@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { SUPPORTED_CURRENCIES, type SupportedCurrency } from "@crypto/shared";
 import { toast } from "vue-sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/composables/useUser";
@@ -27,11 +26,15 @@ const { user, setUser, loadUser } = useUser();
 const preferredCurrency = ref<SupportedCurrency>("USD");
 const description = ref("");
 const avatarFile = ref<File | null>(null);
+const avatarInputRef = ref<HTMLInputElement | null>(null);
 const avatarSrc = ref<string | undefined>(undefined);
 const avatarPreviewSrc = ref<string | undefined>(undefined);
 const saving = ref(false);
 
 const displayedAvatarSrc = computed(() => avatarPreviewSrc.value ?? avatarSrc.value);
+const selectedAvatarFileLabel = computed(
+  () => avatarFile.value?.name ?? t("onboarding.noFileChosen")
+);
 
 function initials() {
   const name = user.value?.name;
@@ -57,6 +60,16 @@ function onAvatarChange(event: Event) {
   clearAvatarPreview();
   if (avatarFile.value) {
     avatarPreviewSrc.value = URL.createObjectURL(avatarFile.value);
+  }
+}
+
+function openAvatarFilePicker() {
+  avatarInputRef.value?.click();
+}
+
+function clearAvatarFileInput() {
+  if (avatarInputRef.value) {
+    avatarInputRef.value.value = "";
   }
 }
 
@@ -106,6 +119,7 @@ async function saveAndContinue() {
       await uploadAvatar(avatarFile.value);
       await loadAvatar();
       avatarFile.value = null;
+      clearAvatarFileInput();
       clearAvatarPreview();
     }
 
@@ -143,9 +157,6 @@ onBeforeUnmount(() => {
     </div>
 
     <Card>
-      <CardHeader>
-        <CardTitle>{{ t("onboarding.title") }}</CardTitle>
-      </CardHeader>
       <CardContent>
         <form class="space-y-6" @submit.prevent="saveAndContinue">
           <div class="space-y-3">
@@ -157,13 +168,27 @@ onBeforeUnmount(() => {
                   :src="displayedAvatarSrc"
                   :alt="user?.name ?? ''"
                 />
-                <AvatarFallback class="bg-primary text-primary-foreground text-xl">
+                <AvatarFallback class="text-xl">
                   {{ initials() }}
                 </AvatarFallback>
               </Avatar>
 
               <div class="grid flex-1 gap-2">
-                <Input type="file" accept="image/*" @change="onAvatarChange" />
+                <input
+                  ref="avatarInputRef"
+                  class="sr-only"
+                  type="file"
+                  accept="image/*"
+                  @change="onAvatarChange"
+                />
+                <div class="flex flex-wrap items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" @click="openAvatarFilePicker">
+                    {{ t("onboarding.chooseAvatarFile") }}
+                  </Button>
+                  <p class="min-w-0 flex-1 text-xs text-muted-foreground truncate">
+                    {{ selectedAvatarFileLabel }}
+                  </p>
+                </div>
                 <p class="text-xs text-muted-foreground">{{ t("onboarding.avatarHint") }}</p>
               </div>
             </div>

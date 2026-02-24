@@ -505,6 +505,51 @@ describe("Auth + Crypto + Favorites integration", () => {
     assert.equal(refreshAfterLogoutResponse.statusCode, 401);
   });
 
+  test("should rotate refresh token and reject previously used refresh cookie", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Refresh Rotation",
+        email: `user-${randomUUID()}@example.com`,
+        password: "12345678"
+      }
+    });
+
+    assert.equal(registerResponse.statusCode, 201);
+    const firstRefreshCookie = extractRefreshCookie(registerResponse);
+
+    const refreshOnce = await app.inject({
+      method: "POST",
+      url: "/auth/refresh",
+      headers: {
+        cookie: firstRefreshCookie
+      }
+    });
+    assert.equal(refreshOnce.statusCode, 200);
+
+    const secondRefreshCookie = extractRefreshCookie(refreshOnce);
+    assert.notEqual(firstRefreshCookie, secondRefreshCookie);
+
+    const usingOldRefreshCookie = await app.inject({
+      method: "POST",
+      url: "/auth/refresh",
+      headers: {
+        cookie: firstRefreshCookie
+      }
+    });
+    assert.equal(usingOldRefreshCookie.statusCode, 401);
+
+    const usingCurrentRefreshCookie = await app.inject({
+      method: "POST",
+      url: "/auth/refresh",
+      headers: {
+        cookie: secondRefreshCookie
+      }
+    });
+    assert.equal(usingCurrentRefreshCookie.statusCode, 200);
+  });
+
   test("should block protected routes without access token", async () => {
     const profileResponse = await app.inject({
       method: "GET",
@@ -629,6 +674,87 @@ describe("Auth + Crypto + Favorites integration", () => {
       }
     });
     assert.equal(loginWithNewPassword.statusCode, 200);
+  });
+
+  test("should return same forgot-password response for existing and unknown email", async () => {
+    const knownEmail = `known-${randomUUID()}@example.com`;
+    const unknownEmail = `unknown-${randomUUID()}@example.com`;
+
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Forgot Password",
+        email: knownEmail,
+        password: "12345678"
+      }
+    });
+    assert.equal(registerResponse.statusCode, 201);
+
+    const forgotKnownResponse = await app.inject({
+      method: "POST",
+      url: "/auth/forgot-password",
+      payload: {
+        email: knownEmail
+      }
+    });
+    assert.equal(forgotKnownResponse.statusCode, 200);
+
+    const forgotUnknownResponse = await app.inject({
+      method: "POST",
+      url: "/auth/forgot-password",
+      payload: {
+        email: unknownEmail
+      }
+    });
+    assert.equal(forgotUnknownResponse.statusCode, 200);
+    assert.equal(forgotKnownResponse.body, forgotUnknownResponse.body);
+  });
+
+  test("should invalidate password reset token after first successful use", async () => {
+    const email = `user-${randomUUID()}@example.com`;
+    const resetToken = `token-${randomUUID()}`;
+    const tokenHash = hashToken(resetToken);
+
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "User Single Use Reset Token",
+        email,
+        password: "12345678"
+      }
+    });
+    assert.equal(registerResponse.statusCode, 201);
+
+    const user = await UserModel.findOne({ email }).exec();
+    assert.ok(user);
+    await UserModel.findByIdAndUpdate(user!._id, {
+      $set: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetTokenExpiresAt: new Date(Date.now() + 5 * 60 * 1000)
+      }
+    }).exec();
+
+    const firstReset = await app.inject({
+      method: "POST",
+      url: "/auth/reset-password",
+      payload: {
+        token: resetToken,
+        password: "87654321"
+      }
+    });
+    assert.equal(firstReset.statusCode, 200);
+
+    const secondReset = await app.inject({
+      method: "POST",
+      url: "/auth/reset-password",
+      payload: {
+        token: resetToken,
+        password: "11223344"
+      }
+    });
+    assert.equal(secondReset.statusCode, 400);
   });
 
   test("should validate avatar upload when file is missing", async () => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLogo from "@/components/AppLogo.vue";
+import LocaleSelector from "@/components/LocaleSelector.vue";
 </script>
 
 <template>
@@ -11,6 +12,9 @@ import AppLogo from "@/components/AppLogo.vue";
         <AppLogo size="lg" />
       </div>
       <div class="rounded-xl border bg-card p-6 shadow-lg space-y-6">
+        <div class="flex justify-end">
+          <LocaleSelector />
+        </div>
         <slot />
       </div>
     </div>

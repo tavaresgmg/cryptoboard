@@ -6,6 +6,7 @@ import { toast } from "vue-sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { getLocalizedAuthErrorMessage } from "@/lib/auth-errors";
 import { login } from "@/services/auth-client";
 import AuthLayout from "@/components/AuthLayout.vue";
 
@@ -25,7 +26,7 @@ async function submit() {
     const redirect = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
     await router.push(redirect);
   } catch (err) {
-    toast.error(err instanceof Error ? err.message : t("common.unexpectedError"));
+    toast.error(getLocalizedAuthErrorMessage(err, t, "auth.loginFailed"));
   } finally {
     loading.value = false;
   }

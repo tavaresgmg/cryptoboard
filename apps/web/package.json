@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:real": "E2E_REAL_BACKEND=true E2E_BASE_URL=http://127.0.0.1:8080 playwright test e2e/real-backend.spec.ts"
   },
   "dependencies": {
     "@crypto/shared": "workspace:*",
