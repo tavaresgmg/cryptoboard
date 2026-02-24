@@ -24,6 +24,9 @@ Every decision followed one principle: **solve the problem in the simplest way t
 | Layered arch over Clean/Hex | Simple, testable, predictable for 3 modules           | Less flexibility to swap DB/framework         |
 | Single User collection      | All data fits one document, no joins needed           | No multi-device sessions                      |
 | Same-origin proxy (nginx)   | Eliminates CORS and CSRF entirely                     | Extra proxy hop (~1ms)                        |
+| MinIO (local) / R2 (prod)   | S3-compatible, same code both envs, R2 zero egress    | Extra container in docker-compose             |
+| GCP Cloud Run               | Free tier, serverless, zero ops                        | Cold starts (~2s), no persistent disk         |
+| MongoDB Atlas M0            | Free 512MB, managed, no ops                            | No multi-doc ACID on free tier                |
 
 ---
 

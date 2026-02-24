@@ -112,6 +112,19 @@ pnpm typecheck                # Typecheck monorepo
 
 ---
 
+## Production
+
+| Service    | Provider           | Tier   |
+| ---------- | ------------------ | ------ |
+| API + Web  | GCP Cloud Run      | Free   |
+| Database   | MongoDB Atlas M0   | Free   |
+| Storage    | Cloudflare R2      | Free   |
+| Email      | Resend             | Free   |
+
+Nginx in the web container proxies `/api/*` to the API service (same-origin — cookies work with `SameSite=Strict`, no CORS/CSRF needed).
+
+---
+
 ## Engineering Notes
 
 Tradeoffs, security posture, and honest self-assessment: [`NOTES.md`](NOTES.md).
